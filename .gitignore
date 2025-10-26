@@ -1,0 +1,36 @@
+/build/
+/cmake-build-*/
+
+# Compiled objects / binaries
+*.o
+*.obj
+*.a
+*.lib
+*.so
+*.dll
+*.dylib
+*.exe
+*.out
+*.tcl
+*.bak
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+Makefile
+cmake_install.cmake
+compile_commands.json
+
+# Tests: logs / temp / local builds
+tests/**/*.log
+tests/**/*.tmp
+tests/**/*.out
+tests/**/build/
+tests/**/bin/
+tests/**/results/
+
+# IDE / misc
+.vscode/
+.idea/
+*.code-workspace
+.DS_Store
