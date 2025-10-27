@@ -1,12 +1,21 @@
 #include "src/core/InputHandler.hpp"
 #include <iostream>
+
+#ifdef _WIN32
+#include <conio.h>
+#else
 #include <termios.h>
 #include <unistd.h>
+#endif
 
 namespace core {
 
 char InputHandler::readChar() {
-  // Set terminal to raw mode
+#ifdef _WIN32
+  // Windows: use _getch() for immediate input
+  return static_cast<char>(_getch());
+#else
+  // Unix/Linux: set terminal to raw mode
   struct termios oldt, newt;
   tcgetattr(STDIN_FILENO, &oldt);
   newt = oldt;
@@ -18,6 +27,7 @@ char InputHandler::readChar() {
   // Restore terminal
   tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
   return ch;
+#endif
 }
 
 InputAction InputHandler::getAction() {
