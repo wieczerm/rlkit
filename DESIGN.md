@@ -35,12 +35,26 @@ Building C++ roguelike engine with following characteristics:
 ├── DESIGN.md                      this file
 ├── src                            source files root
 │   ├── core                       core/low-level setup, types and algorithms
-│   │   ├── FOV.cpp                FOV - Chebyshev algorithm using IMapView interface
+│   │   ├── FOV.cpp                FOV - Bresenham line-of-sight algorithm using IMapView interface
 │   │   ├── FOV.hpp                FOV definitions, depends only on IMapView
 │   │   ├── IMapView.hpp           interface providing minimal map access for FOV
+│   │   ├── InputHandler.cpp      keyboard input handling implementation
+│   │   ├── InputHandler.hpp      input action definitions and direction conversion
+│   │   ├── Pathfinding.cpp       A* pathfinding algorithm implementation
+│   │   ├── Pathfinding.hpp       pathfinding declarations using IMapView interface
 │   │   ├── Position.hpp           basic logic for tile positions
 │   │   └── Types.hpp              basic types, currently empty
-│   ├── main.cpp                   demo file for engine testing
+│   ├── entities                   entity system
+│   │   ├── Entity.cpp             entity implementation with generic property system
+│   │   ├── Entity.hpp             entity class with position and flexible properties
+│   │   ├── EntityManager.cpp     entity collection management implementation
+│   │   ├── EntityManager.hpp     entity manager for adding, removing, finding entities
+│   │   ├── TurnManager.cpp       turn-based system implementation
+│   │   └── TurnManager.hpp       energy-based turn order management
+│   ├── main.cpp                   demo game with movement, FOV, and entities
+│   ├── renderers                  rendering backends
+│   │   ├── FTXUIRenderer.cpp     FTXUI terminal renderer implementation
+│   │   └── FTXUIRenderer.hpp     terminal rendering declarations
 │   └── world                      world building algorithms and logic
 │       ├── gen                    generators
 │       │   ├── CavesGen.cpp       Cellular Automata module map generator
@@ -55,12 +69,16 @@ Building C++ roguelike engine with following characteristics:
 │       ├── MapViewAdapter.hpp     adapter between world::Map and core::IMapView
 │       └── Tile.hpp               struct describing single tile and some basic methods
 └── tests                          storing test files 
+    ├── EntityManagerTests.cpp     testing entity manager functionality
+    ├── EntityTests.cpp            testing entity system and properties
     ├── FOVTests.cpp               testing FOV implementation
     ├── GenDoorsTest.cpp           testing door placement implementation
     ├── GenTests.cpp               generator test
     ├── include
     │   └── assertions.hpp
-    └── MapTests.cpp               map generation testing
+    ├── MapTests.cpp               map generation testing
+    ├── PathfindingTests.cpp       testing A* pathfinding
+    └── TurnManagerTests.cpp       testing turn-based system
 
 # 06. Code principles: how to generate code
 - camelCase naming convention (refactored: resetToWalls, areaIsAllWalls, digToEdgeH/V, etc.)
@@ -89,7 +107,7 @@ Building C++ roguelike engine with following characteristics:
 - namespace: core
 
 07.04. FOV.hpp
-- purpose: declarations for Chebyshev algorithm implementation
+- purpose: declarations for FOV algorithm implementation
 - includes: "IMapView.hpp", "Position.hpp", <vector>
 - defines class FOV with constructor explicit FOV(const core::IMapView &map);
 - methods definitions:
@@ -97,33 +115,141 @@ Building C++ roguelike engine with following characteristics:
       void compute(const Position &origin, int radius);
       bool isVisible(int x, int y) const;
     private:
-      void castLight(int cx, int cy, int row, double startSlope, double endSlope,
-                 int radius, int xx, int xy, int yx, int yy);
+      bool hasLineOfSight(int x0, int y0, int x1, int y1) const;
 - state: functional, depends on IMapView, no longer includes world/Map.hpp
 
 07.05. FOV.cpp
-- purpose: Chebyshev algorithm
+- purpose: Bresenham line-of-sight FOV algorithm
 - includes: "FOV.hpp", <algorithm>, <cmath>
-- methods implemented: FOV::FOV, FOV::compute, FOV::isVisible, FOV::castLight
-- algorithm: Chebyshev
+- methods implemented: FOV::FOV, FOV::compute, FOV::isVisible, FOV::hasLineOfSight
+- algorithm: simple Bresenham-based line-of-sight checks within radius
 - map access through IMapView::blocksLos()
-- state: stable and warning-free
+- state: stable and reliable
 
-07.06. Tile.hpp
+07.06. Pathfinding.hpp
+- purpose: declarations for A* pathfinding algorithm
+- includes: "IMapView.hpp", "Position.hpp", <vector>
+- namespace: core
+- defines class Pathfinding with constructor explicit Pathfinding(const IMapView &map)
+- methods:
+    findPath(const Position &start, const Position &goal) - returns vector of positions
+    heuristic(const Position &a, const Position &b) - Manhattan distance
+    getNeighbors(const Position &pos) - returns 8-directional walkable neighbors
+
+07.07. Pathfinding.cpp
+- purpose: A* pathfinding implementation
+- includes: "Pathfinding.hpp", <algorithm>, <cmath>, <queue>, <unordered_map>, <unordered_set>
+- algorithm: A* with priority queue, Manhattan heuristic, 8-directional movement
+- uses IMapView::blocksLos() to check walkability
+- state: functional and tested
+
+07.08. InputHandler.hpp
+- purpose: keyboard input handling declarations
+- includes: "Position.hpp"
+- namespace: core
+- defines enum class InputAction with movement directions, Wait, Quit, None
+- defines class InputHandler with methods:
+    getAction() - blocking keyboard input
+    static actionToDirection(InputAction) - converts action to Position delta
+
+07.09. InputHandler.cpp
+- purpose: keyboard input implementation
+- includes: "InputHandler.hpp", <iostream>, <termios.h>, <unistd.h>
+- supports vi keys (hjkl yubn), WASD, wait (. or space), quit (q)
+- uses terminal raw mode for immediate input without buffering
+- state: functional
+
+07.10. Entity.hpp
+- purpose: define entity class with flexible property system
+- includes: "../core/Position.hpp", <string>, <unordered_map>
+- namespace: entities
+- defines class Entity with:
+    position management (getPosition, setPosition)
+    name (getName)
+    generic property system (setProperty, getProperty, hasProperty)
+    convenience helpers (setHP, getHP, setMaxHP, getMaxHP)
+- properties stored as std::unordered_map<std::string, int>
+
+07.11. Entity.cpp
+- purpose: entity implementation
+- includes: "Entity.hpp"
+- methods implemented: constructor, setProperty, getProperty, hasProperty
+- state: functional
+
+07.12. EntityManager.hpp
+- purpose: manage collection of entities
+- includes: "Entity.hpp", "../core/Position.hpp", <memory>, <vector>
+- namespace: entities
+- defines class EntityManager with methods:
+    addEntity(std::unique_ptr<Entity>) - takes ownership
+    removeEntity(Entity*) - removes by pointer
+    getEntityAt(const Position&) - returns first entity at position
+    getEntitiesAt(const Position&) - returns all entities at position
+    getEntities() - returns all entities
+    clear() - removes all
+    count() - returns entity count
+
+07.13. EntityManager.cpp
+- purpose: entity manager implementation
+- includes: "EntityManager.hpp", <algorithm>
+- uses smart pointers for ownership management
+- state: functional and tested
+
+07.14. TurnManager.hpp
+- purpose: turn-based gameplay system
+- includes: "Entity.hpp", <queue>, <vector>
+- namespace: entities
+- defines struct TurnEntry with entity pointer and energy
+- defines class TurnManager with methods:
+    addEntity(Entity*) - adds to turn queue using "speed" property
+    removeEntity(Entity*) - removes from queue
+    getNextActor() - returns next entity to act
+    processTurn() - advances time and returns acting entity
+    isEmpty() - checks if queue empty
+    clear() - removes all entities
+
+07.15. TurnManager.cpp
+- purpose: energy-based turn system implementation
+- includes: "TurnManager.hpp", <algorithm>
+- uses priority queue, each turn costs 100 energy
+- faster entities (higher speed property) act more frequently
+- state: functional and tested
+
+07.16. FTXUIRenderer.hpp
+- purpose: terminal rendering declarations
+- includes: "../world/Map.hpp", "../entities/EntityManager.hpp", "../core/FOV.hpp", <string>
+- namespace: renderers
+- defines class FTXUIRenderer with methods:
+    render(map, fov, entityMgr, cameraCenter) - renders game world
+    renderMessages(messages) - renders message log
+    renderStats(name, hp, maxHp) - renders entity stats
+    processFrame() - frame processing
+    tileToChar(Tile) - converts tile to ASCII character
+
+07.17. FTXUIRenderer.cpp
+- purpose: FTXUI renderer implementation
+- includes: "FTXUIRenderer.hpp", "../world/Tile.hpp", <ftxui/dom/elements.hpp>, <ftxui/screen/screen.hpp>, <iostream>
+- currently uses simple cout output
+- tile mapping: Floor(.), Wall(#), DoorClosed(+), DoorOpen(/), Entity(@)
+- camera follows player with configurable viewport size
+- state: basic functionality working
+
+07.18. Tile.hpp
 - purpose: to describe a single tile on a map and define checking methods
 - includes: <cstdint>
 - declarations in namespace world
 - class definition: enum class Tile, currently with Floor, Wall, DoorClosed, DoorOpen
 - methods:
-    blocksMove(Tile)
-    blocksLos(Tile)
+    blocksMove(Tile) - returns true for Wall and DoorClosed
+    blocksLos(Tile) - returns true for Wall and DoorClosed
     isDoor(Tile)
     isWall(Tile)
     isFloor(Tile)
     isDoorClosed(Tile)
     isDoorOpen(Tile)
+- state: fixed blocksMove implementation
 
-07.07. Map.hpp
+07.19. Map.hpp
 - purpose: define class Map for use with map generator
 - includes: "../core/Position.hpp", "Tile.hpp", <cassert>, <cstddef>, <vector>
 - declarations in namespace world
@@ -140,16 +266,23 @@ Building C++ roguelike engine with following characteristics:
     fill(Tile) - replaces reset_to_walls, fills map with provided Tile
     private idx(Position)
 
-07.08. Map.cpp
+07.20. Map.cpp
 - purpose: map routines
 - state: currently minimal
 
-07.09. GenOptions.hpp
+07.21. MapViewAdapter.hpp
+- purpose: adapter between world::Map and core::IMapView
+- includes: "Map.hpp", "../core/IMapView.hpp"
+- namespace: world
+- implements IMapView interface for Map class
+- allows core algorithms to work with world::Map through interface
+
+07.22. GenOptions.hpp
 - purpose: contain shared CommonGenOptions base struct for all generators
 - includes: none
 - defines struct CommonGenOptions with field add_doors = true;
 
-07.10. CavesGen.hpp
+07.23. CavesGen.hpp
 - purpose: definitions for Cellular Automata caves generator module
 - includes: "GenOptions.hpp", "../Map.hpp", <random>
 - declarations in namespace world
@@ -161,63 +294,44 @@ Building C++ roguelike engine with following characteristics:
         survive = 4
     method generateCavesModule(Map, CavesOptions, std::mt19937)
 
-07.11. CavesGen.cpp
+07.24. CavesGen.cpp
 - purpose: Cellular Automata caves floor module generator implementation
-- includes: "CavesGen.hpp", <algorithm>, <climits>, <queue>, <vector>
-- helpers renamed to camelCase (resetToWalls -> fill(), countWallNeighbors8, caStep, etc.)
-- uses declaration CompId = size_t to avoid static_casts
-- implementation state: stable
+- state: functional
 
-07.12. RoomsGen.hpp
-- purpose: definitions for rooms and corridors generator module
+07.25. RoomsGen.hpp
+- purpose: rooms and corridors generator declarations
 - includes: "GenOptions.hpp", "../Map.hpp", <random>
-- declarations in namespace world
-- declares:
-    struct RoomsOptions : CommonGenOptions
-        max_rooms = 35
-        room_min = 5
-        room_max = 10
-    method generateRoomsModule(Map, RoomsOptions, std::mt19937)
+- namespace: world
+- declares struct RoomsOptions : CommonGenOptions with room_min, room_max, max_rooms
+- method generateRoomsModule(Map, RoomsOptions, std::mt19937)
 
-07.13. RoomsGen.cpp
-- purpose: Rooms and corridors floor module map generator
-- includes: "RoomsGen.hpp", <algorithm>, <vector>
-- helpers renamed to camelCase (resetToWalls -> fill(), areaIsAllWalls, carveRect, digToEdgeH/V, carveLCorridorStop)
-- implementation state: working, corridors logic under refinement
+07.26. RoomsGen.cpp
+- purpose: rooms and corridors generator implementation with door placement
+- state: functional with door placement working
 
-07.14. MapGenerator.hpp
-- purpose: declarations for the main floor generator engine
+07.27. MapGenerator.hpp
+- purpose: main map generator using modules
 - includes: "../Map.hpp", <random>
-- uses forward declarations of RoomsOptions and CavesOptions
-- declarations in namespace world
-- declares:
-    class MapGenerator - generator engine class
-    public:
-      generateRooms(Map, RoomsOptions)
-      generateCaves(Map, CavesOptions)
-    private:
-      placeDoors(Map)
-      std::mt19937 &rng()
-      std::mt19937 rng_;
+- namespace: world
+- class MapGenerator with seed-based RNG
+- methods: generateRooms(Map, RoomsOptions), generateCaves(Map, CavesOptions)
 
-07.15. MapGenerator.cpp
-- purpose: main generator engine using modules
-- includes: "MapGenerator.hpp", "CavesGen.hpp", "RoomsGen.hpp", <algorithm>
-- implementations in namespace world
-    MapGenerator::MapGenerator(uint)
-    std::mt19937 &MapGenerator::rng()
-    MapGenerator::generateRooms(Map, RoomsOptions)
-    MapGenerator::generateCaves(Map, CavesOptions)
-    MapGenerator::placeDoors(Map)
-- uses m.fill(Tile::Wall) instead of local reset_to_walls()
-- state: stable, integrated with refactored modules
+07.28. MapGenerator.cpp
+- purpose: map generator implementation
+- coordinates generation modules
+- state: functional
 
-#08. Compilation
-- using CMake and CMakeLists.txt 
-
-#09. Communication with the user
-- brief and concise
-- do not generate overblown responses unless asked to explain something in more detail
-- do not generate many steps ahead
-- if possible make a brief comment on design choices made
-
+07.29. main.cpp
+- purpose: playable demo game
+- includes: all engine components
+- features:
+    - map generation with rooms and doors
+    - player entity with movement (WASD/vi keys)
+    - 5 goblin entities
+    - FOV system (radius 8)
+    - collision detection
+    - message log
+    - stats display
+    - game loop with input handling
+    - quit functionality (Q key)
+- state: fully functional demo

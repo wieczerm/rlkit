@@ -23,14 +23,31 @@ endif()
 # --- core ---
 set(CORE_SOURCES
   src/core/FOV.cpp
+  src/core/Pathfinding.cpp
+  src/core/InputHandler.cpp
 )
 set(CORE_HEADERS
   src/core/Position.hpp
   src/core/FOV.hpp
+  src/core/Pathfinding.hpp
+  src/core/InputHandler.hpp
 )
 add_library(core STATIC ${CORE_SOURCES} ${CORE_HEADERS})
 target_include_directories(core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
+# --- entities ---
+set(ENTITIES_SOURCES
+  src/entities/Entity.cpp
+  src/entities/EntityManager.cpp
+  src/entities/TurnManager.cpp
+)
+set(ENTITIES_HEADERS  
+  src/entities/Entity.hpp
+  src/entities/EntityManager.hpp
+  src/entities/TurnManager.hpp
+)
+add_library(entities STATIC ${ENTITIES_SOURCES} ${ENTITIES_HEADERS})
+target_include_directories(entities PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 # --- world ---
 set(WORLD_SOURCES
   src/world/Map.cpp
@@ -50,9 +67,30 @@ add_library(world STATIC ${WORLD_SOURCES} ${WORLD_HEADERS})
 target_include_directories(world PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(world PUBLIC core)
 
+find_package(ftxui REQUIRED)
+
+# --- FTXUI renderer ---
+set(FTXUIRenderer_SOURCES
+  src/renderers/FTXUIRenderer.cpp
+)
+set(FTXUIRenderer_HEADERS
+  src/renderers/FTXUIRenderer.hpp
+)
+
+add_library(ftxui_renderer STATIC ${FTXUIRenderer_SOURCES} ${FTXUIRenderer_HEADERS})
+target_include_directories(ftxui_renderer PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(ftxui_renderer PUBLIC 
+  core 
+  world 
+  entities
+  ftxui::screen 
+  ftxui::dom 
+  ftxui::component
+)
+
 # --- demo ---
 add_executable(rl_demo src/main.cpp)
-target_link_libraries(rl_demo PRIVATE core world)
+target_link_libraries(rl_demo PRIVATE core world entities ftxui_renderer)
 
 # --- tests ---
 include(CTest)
@@ -76,5 +114,22 @@ if (BUILD_TESTING)
   add_executable(gen_doorstests tests/GenDoorsTest.cpp)
   target_link_libraries(gen_doorstests PRIVATE core world)
   add_test(NAME gen_doorstests COMMAND gen_doorstests)
+
+  add_executable(pathfinding_tests tests/PathfindingTests.cpp)
+  target_link_libraries(pathfinding_tests PRIVATE core world)
+  add_test(NAME pathfinding_tests COMMAND pathfinding_tests)
+
+  add_executable(entities_tests tests/EntityTests.cpp)
+  target_link_libraries(entities_tests PRIVATE core world entities)
+  add_test(NAME entities_tests COMMAND entities_tests)
+
+  add_executable(entity_manager_tests tests/EntityManagerTests.cpp)
+  target_link_libraries(entity_manager_tests PRIVATE core world entities)
+  add_test(NAME entity_manager_tests COMMAND entity_manager_tests)
+
+  add_executable(turn_manager_tests tests/TurnManagerTests.cpp)
+  target_link_libraries(turn_manager_tests PRIVATE core world entities)
+  add_test(NAME turn_manager_tests COMMAND turn_manager_tests)
+
 endif()
 

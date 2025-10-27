@@ -1,11 +1,6 @@
-#include "FOV.hpp"
+#include "src/core/FOV.hpp"
 #include <algorithm>
 #include <cmath>
-
-const int FOV::multXX[8] = {1, 0, -1, 0, 1, 0, -1, 0};
-const int FOV::multXY[8] = {0, 1, 0, -1, 0, 1, 0, -1};
-const int FOV::multYX[8] = {0, 1, 0, 1, 0, -1, 0, -1};
-const int FOV::multYY[8] = {1, 0, 1, 0, -1, 0, -1, 0};
 
 FOV::FOV(const core::IMapView &map)
     : map_(map), width_(static_cast<size_t>(map.width())),
@@ -13,75 +8,74 @@ FOV::FOV(const core::IMapView &map)
       visible_(height_, std::vector<bool>(width_, false)) {}
 
 void FOV::compute(const Position &origin, int radius) {
-  for (size_t y = 0; y < height_; ++y)
-    for (size_t x = 0; x < width_; ++x)
-      visible_[y][x] = false;
+  for (auto &row : visible_)
+    std::fill(row.begin(), row.end(), false);
 
-  if (origin.x >= 0 && static_cast<size_t>(origin.x) < width_ &&
-      origin.y >= 0 && static_cast<size_t>(origin.y) < height_) {
-    visible_[static_cast<std::size_t>(origin.y)]
-            [static_cast<std::size_t>(origin.x)] = true;
-  }
+  visible_[static_cast<std::size_t>(origin.y)]
+          [static_cast<std::size_t>(origin.x)] = true;
 
-  for (int oct = 0; oct < 8; ++oct) {
-    castLight(origin.x, origin.y, 1, 1.0, 0.0, radius, multXX[oct], multXY[oct],
-              multYX[oct], multYY[oct]);
+  // Simple circle-based FOV with line-of-sight checks
+  for (int dy = -radius; dy <= radius; ++dy) {
+    for (int dx = -radius; dx <= radius; ++dx) {
+      // Skip if outside radius (Chebyshev distance)
+      if (std::max(std::abs(dx), std::abs(dy)) > radius)
+        continue;
+
+      int x = origin.x + dx;
+      int y = origin.y + dy;
+
+      if (x < 0 || static_cast<size_t>(x) >= width_ || 
+          y < 0 || static_cast<size_t>(y) >= height_)
+        continue;
+
+      // Check line of sight using Bresenham
+      if (hasLineOfSight(origin.x, origin.y, x, y)) {
+        visible_[static_cast<size_t>(y)][static_cast<size_t>(x)] = true;
+      }
+    }
   }
 }
 
 bool FOV::isVisible(int x, int y) const {
-  if (x < 0 || static_cast<size_t>(x) >= width_ || y < 0 ||
-      static_cast<size_t>(y) >= height_)
+  if (x < 0 || static_cast<std::size_t>(x) >= width_ || y < 0 ||
+      static_cast<std::size_t>(y) >= height_)
     return false;
   return visible_[static_cast<std::size_t>(y)][static_cast<std::size_t>(x)];
 }
 
-void FOV::castLight(int cx, int cy, int row, double startSlope, double endSlope,
-                    int radius, int xx, int xy, int yx, int yy) {
-  if (startSlope < endSlope)
-    return;
+bool FOV::hasLineOfSight(int x0, int y0, int x1, int y1) const {
+  // Bresenham's line algorithm for LOS check
+  int dx = std::abs(x1 - x0);
+  int dy = std::abs(y1 - y0);
+  int sx = x0 < x1 ? 1 : -1;
+  int sy = y0 < y1 ? 1 : -1;
+  int err = dx - dy;
 
-  double nextStart = startSlope;
-  for (int i = row; i <= radius; ++i) {
-    bool blocked = false;
-    for (int dx = -i, dy = -i; dx <= 0; ++dx) {
-      double lSlope = (dx - 0.5) / (dy + 0.5);
-      double rSlope = (dx + 0.5) / (dy - 0.5);
+  int x = x0;
+  int y = y0;
 
-      if (rSlope > startSlope)
-        continue;
-      if (lSlope < endSlope)
-        break;
+  while (true) {
+    // Don't check blocking at the target position
+    if (x == x1 && y == y1)
+      return true;
 
-      int mx = cx + dx * xx + dy * xy;
-      int my = cy + dx * yx + dy * yy;
+    // Check if current position blocks LOS
+    if (map_.blocksLos(x, y))
+      return false;
 
-      if (mx < 0 || static_cast<size_t>(mx) >= width_ || my < 0 ||
-          static_cast<size_t>(my) >= height_)
-        continue;
-
-      if (std::max(std::abs(dx), std::abs(dy)) <= radius) {
-        visible_[static_cast<std::size_t>(my)][static_cast<std::size_t>(mx)] =
-            true;
-      }
-
-      if (blocked) {
-        if (map_.blocksLos(mx, my)) { // was: map_.isOpaque(mx, my)
-          nextStart = rSlope;
-          continue;
-        } else {
-          blocked = false;
-          startSlope = nextStart;
-        }
-      } else {
-        if (map_.blocksLos(mx, my) && i < radius) {
-          blocked = true;
-          castLight(cx, cy, i + 1, startSlope, lSlope, radius, xx, xy, yx, yy);
-          nextStart = rSlope;
-        }
-      }
-    }
-    if (blocked)
+    if (x == x1 && y == y1)
       break;
+
+    int e2 = 2 * err;
+    if (e2 > -dy) {
+      err -= dy;
+      x += sx;
+    }
+    if (e2 < dx) {
+      err += dx;
+      y += sy;
+    }
   }
+
+  return true;
 }

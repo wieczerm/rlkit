@@ -17,8 +17,9 @@ inline constexpr bool blocksMove(Tile t) noexcept {
   case Tile::DoorClosed:
     return true;
   case Tile::Floor:
+    return false;
   case Tile::DoorOpen:
-    return true;
+    return false;
   }
   return true;
 }
@@ -30,6 +31,7 @@ inline constexpr bool blocksLos(Tile t) noexcept {
   case Tile::DoorClosed:
     return true;
   case Tile::Floor:
+    return false;
   case Tile::DoorOpen:
     return false;
   }

@@ -16,6 +16,11 @@ private:
   size_t height_;
   std::vector<std::vector<bool>> visible_;
 
-  // Simple Bresenham line-of-sight check
-  bool hasLineOfSight(int x0, int y0, int x1, int y1) const;
+  static const int multXX[8];
+  static const int multXY[8];
+  static const int multYX[8];
+  static const int multYY[8];
+
+  void castLight(int cx, int cy, int row, double startSlope, double endSlope,
+                 int radius, int xx, int xy, int yx, int yy);
 };
