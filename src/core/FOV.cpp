@@ -60,7 +60,7 @@ bool FOV::hasLineOfSight(int x0, int y0, int x1, int y1) const {
       return true;
 
     // Check if current position blocks LOS
-    if (map_.blocksLos(x, y))
+    if (map_.blocksLineOfSight(x, y))
       return false;
 
     if (x == x1 && y == y1)

@@ -66,7 +66,8 @@ InputAction InputHandler::getAction() {
   case '.':
   case ' ':
     return InputAction::Wait;
-
+  case 'o':
+    return InputAction::Open;
   // Quit
   case 'q':
   case 'Q':

@@ -44,6 +44,8 @@ Building C++ roguelike engine with following characteristics:
 │   │   ├── Pathfinding.hpp       pathfinding declarations using IMapView interface
 │   │   ├── Position.hpp           basic logic for tile positions
 │   │   └── Types.hpp              basic types, currently empty
+│   ├── config                     configuration and tuning parameters
+│   │   └── DungeonConfig.hpp      level configurations, presets, generation parameters
 │   ├── entities                   entity system
 │   │   ├── Entity.cpp             entity implementation with generic property system
 │   │   ├── Entity.hpp             entity class with position and flexible properties
@@ -335,3 +337,47 @@ Building C++ roguelike engine with following characteristics:
     - game loop with input handling
     - quit functionality (Q key)
 - state: fully functional demo
+
+# 08. Future tweaks
+Ideas for potential improvements - not critical, implement only when needed (YAGNI principle):
+
+08.01. Type-safe Entity property system
+- Current limitation: properties are map<string, int> - only integers supported
+- Improvement: use std::variant to support multiple types (int, float, string, bool)
+- Benefits: type safety, autocomplete, runtime flexibility
+- Priority: low - current system works fine for basic needs
+
+08.02. Strategy pattern for generators
+- Current limitation: MapGenerator hardcoded to RoomsGen and CavesGen
+- Improvement: plugin architecture with generator registration
+- Benefits: add new generators without modifying existing code, easier testing
+- Priority: low - only needed if planning multiple new generator types
+- YAGNI: implement only when actually adding 3+ different generators
+
+EOF
+cat /mnt/user-data/outputs/DESIGN_update.txt
+
+Output
+
+# 08. Future tweaks
+Ideas for potential improvements - not critical, implement only when needed (YAGNI principle):
+
+08.01. Type-safe Entity property system
+- Current limitation: properties are map<string, int> - only integers supported
+- Improvement: use std::variant to support multiple types (int, float, string, bool)
+- Benefits: type safety, autocomplete, runtime flexibility
+- Priority: low - current system works fine for basic needs
+
+08.02. Strategy pattern for generators
+- Current limitation: MapGenerator hardcoded to RoomsGen and CavesGen
+- Improvement: plugin architecture with generator registration
+- Benefits: add new generators without modifying existing code, easier testing
+- Priority: low - only needed if planning multiple new generator types
+- YAGNI: implement only when actually adding 3+ different generators
+
+08.03. Professional testing framework
+- Current: custom assertion macros (EXPECT_TRUE, EXPECT_EQ) in tests/include/assertions.hpp
+- Improvement: integrate Catch2 or Google Test
+- Benefits: better test reporting, fixtures, parameterized tests, industry-standard tools
+- Priority: low - current system works fine, good learning opportunity for C++ testing
+- YAGNI: implement when test complexity increases or need advanced features

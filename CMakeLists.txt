@@ -35,6 +35,32 @@ set(CORE_HEADERS
 add_library(core STATIC ${CORE_SOURCES} ${CORE_HEADERS})
 target_include_directories(core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
+# In systems section (new)
+set(SYSTEMS_SOURCES
+  src/systems/CombatSystem.cpp
+)
+set(SYSTEMS_HEADERS
+  src/systems/CombatSystem.hpp
+)
+add_library(systems STATIC ${SYSTEMS_SOURCES} ${SYSTEMS_HEADERS})
+target_include_directories(systems PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(systems PUBLIC entities)
+
+# In actions section (new)
+set(ACTIONS_SOURCES
+  src/actions/MoveAction.cpp
+  src/actions/OpenAction.cpp
+)
+set(ACTIONS_HEADERS
+  src/actions/ActionResult.hpp
+  src/actions/MoveAction.hpp
+  src/actions/OpenAction.hpp
+)
+add_library(actions STATIC ${ACTIONS_SOURCES} ${ACTIONS_HEADERS})
+target_include_directories(actions PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(actions PUBLIC core world entities systems)
+
+
 # --- entities ---
 set(ENTITIES_SOURCES
   src/entities/Entity.cpp
@@ -90,7 +116,7 @@ target_link_libraries(ftxui_renderer PUBLIC
 
 # --- demo ---
 add_executable(rl_demo src/main.cpp)
-target_link_libraries(rl_demo PRIVATE core world entities ftxui_renderer)
+target_link_libraries(rl_demo PRIVATE core world entities ftxui_renderer systems actions)
 
 # --- tests ---
 include(CTest)

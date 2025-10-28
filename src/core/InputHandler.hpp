@@ -14,11 +14,13 @@ enum class InputAction {
   MoveSouthEast,
   MoveSouthWest,
   Wait,
+  Open,
   Quit
 };
 
 class InputHandler {
 public:
+  static char readChar();
   InputHandler() = default;
 
   // Get input action (blocking)
@@ -26,10 +28,6 @@ public:
 
   // Convert action to direction delta
   static Position actionToDirection(InputAction action);
-
-private:
-  // Read single character from stdin
-  char readChar();
 };
 
 } // namespace core

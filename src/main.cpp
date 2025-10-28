@@ -5,8 +5,12 @@
 #include "entities/EntityManager.hpp"
 #include "entities/TurnManager.hpp"
 #include "renderers/FTXUIRenderer.hpp"
+#include "src/actions/ActionResult.hpp"
+#include "src/actions/MoveAction.hpp"
+#include "src/actions/OpenAction.hpp"
 #include "world/Map.hpp"
 #include "world/MapViewAdapter.hpp"
+#include "world/Tile.hpp"
 #include "world/gen/MapGenerator.hpp"
 #include "world/gen/RoomsGen.hpp"
 #include <iostream>
@@ -44,8 +48,9 @@ int main() {
     while (attempts < 100) {
       int x = 1 + (static_cast<int>(rng()) % (MAP_W - 2));
       int y = 1 + (static_cast<int>(rng()) % (MAP_H - 2));
-      if (!map.blocksMove({x, y}) && !entityMgr.getEntityAt({x, y})) {
-        auto monster = std::make_unique<entities::Entity>("Goblin", Position{x, y});
+      if (!map.blocksMovement({x, y}) && !entityMgr.getEntityAt({x, y})) {
+        auto monster =
+            std::make_unique<entities::Entity>("Goblin", Position{x, y});
         monster->setMaxHP(20);
         monster->setHP(20);
         monster->setProperty("speed", 80);
@@ -71,6 +76,45 @@ int main() {
   // Game loop
   bool running = true;
   while (running) {
+
+    core::InputAction action = input.getAction();
+
+    if (action == core::InputAction::Open) {
+      Position target = playerPtr->getPosition();
+      if (world::isDoor(map.at({target.x, target.y + 1})))
+        target.y += 1; // south
+      if (world::isDoor(map.at({target.x, target.y - 1})))
+        target.y -= 1; // north
+      if (world::isDoor(map.at({target.x - 1, target.y})))
+        target.x -= 1; // west
+      if (world::isDoor(map.at({target.x + 1, target.y})))
+        target.x += 1; // east
+      actions::OpenAction open(*playerPtr, target);
+      auto result = open.execute(map);
+      messages.clear();
+      messages.push_back(result.message);
+    } else if (action == core::InputAction::Quit) {
+      running = false;
+    } else if (action != core::InputAction::None &&
+               action != core::InputAction::Wait) {
+      // Movement actions
+      Position delta = core::InputHandler::actionToDirection(action);
+      Position newPos = playerPtr->getPosition() + delta;
+
+      actions::MoveAction move(*playerPtr, newPos);
+      auto result = move.execute(map, entityMgr);
+
+      messages.clear();
+      if (result.status == actions::ActionStatus::Success) {
+        if (!result.message.empty()) {
+          messages.push_back(result.message);
+        } else {
+          messages.push_back("You move.");
+        }
+      } else {
+        messages.push_back(result.message);
+      }
+    }
     // Update FOV
     fov.compute(playerPtr->getPosition(), 8);
 
@@ -82,7 +126,7 @@ int main() {
     renderer.renderMessages(messages);
 
     // Get input
-    core::InputAction action = input.getAction();
+    // core::InputAction action = input.getAction();
 
     if (action == core::InputAction::Quit) {
       running = false;
@@ -96,26 +140,26 @@ int main() {
     }
 
     // Handle movement
-    Position delta = core::InputHandler::actionToDirection(action);
-    if (delta.x != 0 || delta.y != 0) {
-      Position newPos = playerPtr->getPosition() + delta;
+    /* Position delta = core::InputHandler::actionToDirection(action);
+     if (delta.x != 0 || delta.y != 0) {
+       Position newPos = playerPtr->getPosition() + delta;
 
-      if (map.inBounds(newPos) && !map.blocksMove(newPos)) {
-        // Check for entity collision
-        entities::Entity *target = entityMgr.getEntityAt(newPos);
-        if (target) {
-          messages.clear();
-          messages.push_back("You bump into " + target->getName());
-        } else {
-          playerPtr->setPosition(newPos);
-          messages.clear();
-          messages.push_back("You move.");
-        }
-      } else {
-        messages.clear();
-        messages.push_back("Blocked!");
-      }
-    }
+       if (map.inBounds(newPos) && !map.blocksMovement(newPos)) {
+         // Check for entity collision
+         entities::Entity *target = entityMgr.getEntityAt(newPos);
+         if (target) {
+           messages.clear();
+           messages.push_back("You bump into " + target->getName());
+         } else {
+           playerPtr->setPosition(newPos);
+           messages.clear();
+           messages.push_back("You move.");
+         }
+       } else {
+         messages.clear();
+         messages.push_back("Blocked!");
+       }
+     }*/
   }
 
   std::cout << "\nThanks for playing!\n";

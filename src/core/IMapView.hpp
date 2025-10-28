@@ -7,6 +7,6 @@ struct IMapView {
   virtual int width() const noexcept = 0;
   virtual int height() const noexcept = 0;
   // True jeśli BLOKUJE LOS:
-  virtual bool blocksLos(int x, int y) const noexcept = 0;
+  virtual bool blocksLineOfSight(int x, int y) const noexcept = 0;
 };
 } // namespace core

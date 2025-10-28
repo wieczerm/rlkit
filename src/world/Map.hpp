@@ -46,17 +46,17 @@ public:
     if (x < 0 || x >= w_ || y < 0 || y >= h_) {
       return true; // poza mapą traktujemy jako blokadę
     }
-    return ::world::blocksLos(data_[idx({x, y})]);
+    return ::world::blocksLineOfSight(data_[idx({x, y})]);
   }
 
-  bool blocksMove(Position p) const noexcept {
+  bool blocksMovement(Position p) const noexcept {
     if (!inBounds(p))
       return true;
-    return ::world::blocksMove(at(p));
+    return ::world::blocksMovement(at(p));
   }
 
-  inline bool blocksLos(Position p) const noexcept {
-    return ::world::blocksLos(at(p));
+  inline bool blocksLineOfSight(Position p) const noexcept {
+    return ::world::blocksLineOfSight(at(p));
   }
 
 private:

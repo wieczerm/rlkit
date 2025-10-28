@@ -11,7 +11,7 @@
 // Tile at(Position) const;
 // void set(Position, Tile);
 // bool isOpaque(int x,int y) const;
-// bool blocksMove(Position) const; bool blocksLos(Position) const;
+// bool blocksMovement(Position) const; bool blocksLineOfSight(Position) const;
 
 int main() {
   using world::Map;
@@ -34,12 +34,12 @@ int main() {
 
   // Opaque / blocks*
   EXPECT_TRUE(m.isOpaque(0, 0)); // ściana domyślna
-  EXPECT_TRUE(m.blocksMove({0, 0}));
-  EXPECT_TRUE(m.blocksLos({0, 0}));
+  EXPECT_TRUE(m.blocksMovement({0, 0}));
+  EXPECT_TRUE(m.blocksLineOfSight({0, 0}));
 
   // Podłoga nie blokuje
-  EXPECT_TRUE(!m.blocksMove({1, 1}));
-  EXPECT_TRUE(!m.blocksLos({1, 1}));
+  EXPECT_TRUE(!m.blocksMovement({1, 1}));
+  EXPECT_TRUE(!m.blocksLineOfSight({1, 1}));
 
   // Ustalamy kilka płytek
   for (int y = 0; y < m.height(); ++y) {
@@ -48,8 +48,8 @@ int main() {
         m.set({x, y}, Tile::Floor);
     }
   }
-  EXPECT_TRUE(!m.blocksMove({5, 5}));
-  EXPECT_TRUE(!m.blocksLos({5, 5}));
+  EXPECT_TRUE(!m.blocksMovement({5, 5}));
+  EXPECT_TRUE(!m.blocksLineOfSight({5, 5}));
 
   std::cout << "Map tests passed.\n";
   return EXIT_SUCCESS;

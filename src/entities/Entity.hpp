@@ -24,7 +24,7 @@ public:
   // Common property helpers (optional convenience)
   void setHP(int hp) { setProperty("hp", hp); }
   int getHP() const { return getProperty("hp", 0); }
-  
+
   void setMaxHP(int maxHp) { setProperty("max_hp", maxHp); }
   int getMaxHP() const { return getProperty("max_hp", 0); }
 

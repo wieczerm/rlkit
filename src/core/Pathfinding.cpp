@@ -43,7 +43,7 @@ std::vector<Position> Pathfinding::getNeighbors(const Position &pos) const {
     int ny = pos.y + dy[i];
 
     if (nx >= 0 && nx < map_.width() && ny >= 0 && ny < map_.height()) {
-      if (!map_.blocksLos(nx, ny)) {
+      if (!map_.blocksLineOfSight(nx, ny)) {
         neighbors.push_back({nx, ny});
       }
     }
@@ -57,7 +57,7 @@ std::vector<Position> Pathfinding::findPath(const Position &start,
   if (start == goal)
     return {start};
 
-  if (map_.blocksLos(goal.x, goal.y))
+  if (map_.blocksLineOfSight(goal.x, goal.y))
     return {};
 
   std::priority_queue<Node, std::vector<Node>, std::greater<Node>> openSet;

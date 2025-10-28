@@ -1,3 +1,4 @@
+#include "../../config/DungeonConfig.hpp"
 #include "RoomsGen.hpp"
 #include <algorithm>
 #include <vector>
@@ -69,13 +70,18 @@ void carveLCorridorStop(world::Map &m, Position a, Position b,
 }
 
 // Clamp and normalize options to the map size.
-void normalize_rooms_options(world::RoomsOptions &opt, const world::Map &m) {
-  opt.room_min = std::max(2, opt.room_min);
+void normalize_rooms_options(world::RoomsOptions &opt,
+                             const ::config::RoomPlacementConfig &placement,
+                             const world::Map &m) {
+  opt.room_min = std::max(placement.min_room_dimension, opt.room_min);
   opt.room_max = std::max(opt.room_min, opt.room_max);
 
-  const int maxW = std::max(2, m.width() - 2);
-  const int maxH = std::max(2, m.height() - 2);
-  const int hardMax = std::max(2, std::min(maxW, maxH));
+  const int maxW =
+      std::max(placement.edge_margin, m.width() - placement.edge_margin);
+  const int maxH =
+      std::max(placement.edge_margin, m.height() - placement.edge_margin);
+  const int hardMax =
+      std::max(placement.min_room_dimension, std::min(maxW, maxH));
   opt.room_max = std::min(opt.room_max, hardMax);
 
   const int avg = (opt.room_min + opt.room_max) / 2;
@@ -90,12 +96,14 @@ void normalize_rooms_options(world::RoomsOptions &opt, const world::Map &m) {
 
 namespace world {
 
-void generateRoomsModule(Map &m, const RoomsOptions &optIn, std::mt19937 &G) {
+void generateRoomsModuleImpl(Map &m, const RoomsOptions &optIn,
+                             const ::config::RoomPlacementConfig &placement,
+                             std::mt19937 &G) {
 
   m.fill(Tile::Wall);
 
   RoomsOptions opt = optIn;
-  normalize_rooms_options(opt, m);
+  normalize_rooms_options(opt, placement, m);
 
   std::uniform_int_distribution<int> rw(opt.room_min, opt.room_max);
   std::uniform_int_distribution<int> rh(opt.room_min, opt.room_max);
@@ -103,21 +111,25 @@ void generateRoomsModule(Map &m, const RoomsOptions &optIn, std::mt19937 &G) {
   std::vector<Rect> rooms;
   rooms.reserve(static_cast<size_t>(opt.max_rooms));
 
-  const int attempts = std::max(100, opt.max_rooms * 8);
+  const int attempts = std::max(placement.attempts_multiplier,
+                                opt.max_rooms * placement.attempts_per_room);
   int placed = 0;
 
   // Placement loop with attempts budget.
   for (int i = 0; i < attempts && placed < opt.max_rooms; ++i) {
     int w = rw(G), h = rh(G);
-    if (w >= m.width() - 2 || h >= m.height() - 2)
+    if (w >= m.width() - placement.edge_margin ||
+        h >= m.height() - placement.edge_margin)
       continue;
 
-    std::uniform_int_distribution<int> rx(1, std::max(1, m.width() - w - 2));
-    std::uniform_int_distribution<int> ry(1, std::max(1, m.height() - h - 2));
+    std::uniform_int_distribution<int> rx(
+        1, std::max(1, m.width() - w - placement.edge_margin));
+    std::uniform_int_distribution<int> ry(
+        1, std::max(1, m.height() - h - placement.edge_margin));
     Rect r{rx(G), ry(G), w, h};
 
     // 1-tile buffer — rooms won’t merge into one blob.
-    if (!areaIsAllWalls(m, r, /*pad=*/1))
+    if (!areaIsAllWalls(m, r, placement.room_padding))
       continue;
 
     carveRect(m, r);
@@ -135,4 +147,16 @@ void generateRoomsModule(Map &m, const RoomsOptions &optIn, std::mt19937 &G) {
     carveLCorridorStop(m, rooms[i - 1].center(), rooms[i].center(), G);
 }
 
+// New overload: accepts LevelConfig
+void generateRoomsModule(Map &m, const config::LevelConfig &levelCfg,
+                         std::mt19937 &G) {
+  generateRoomsModuleImpl(m, levelCfg.rooms, levelCfg.room_placement, G);
+}
+
+// Old overload: backward compatibility wrapper
+void generateRoomsModule(Map &m, const RoomsOptions &opt, std::mt19937 &G) {
+  config::LevelConfig cfg;
+  cfg.rooms = opt;
+  generateRoomsModule(m, cfg, G);
+}
 } // namespace world

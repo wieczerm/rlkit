@@ -1,4 +1,5 @@
 #include "CavesGen.hpp"
+#include "../../config/DungeonConfig.hpp"
 #include <algorithm>
 #include <climits>
 #include <queue>
@@ -174,12 +175,12 @@ void connectComponentsToMain(world::Map &m) {
 
 namespace world {
 
-void generateCavesModule(Map &m, const CavesOptions &opt, std::mt19937 &G) {
+void generateCavesModuleImpl(Map &m, const CavesOptions &opt, const ::config::CaveGenerationConfig &caveGen, std::mt19937 &G) {
 
   m.fill(Tile::Wall);
 
   // Seed phase (random interior, solid border).
-  std::uniform_int_distribution<int> pct(0, 99);
+  std::uniform_int_distribution<int> pct(caveGen.random_percent_min, caveGen.random_percent_max);
   for (int y = 0; y < m.height(); ++y)
     for (int x = 0; x < m.width(); ++x) {
       const bool edge =
@@ -198,4 +199,16 @@ void generateCavesModule(Map &m, const CavesOptions &opt, std::mt19937 &G) {
   connectComponentsToMain(m);
 }
 
+
+// New overload: accepts LevelConfig
+void generateCavesModule(Map &m, const config::LevelConfig &levelCfg, std::mt19937 &G) {
+  generateCavesModuleImpl(m, levelCfg.caves, levelCfg.cave_generation, G);
+}
+
+// Old overload: backward compatibility wrapper
+void generateCavesModule(Map &m, const CavesOptions &opt, std::mt19937 &G) {
+  config::LevelConfig cfg;
+  cfg.caves = opt;
+  generateCavesModule(m, cfg, G);
+}
 } // namespace world

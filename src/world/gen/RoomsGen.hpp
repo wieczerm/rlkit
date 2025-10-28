@@ -1,4 +1,10 @@
 #pragma once
+
+// Forward declaration
+namespace config {
+  struct LevelConfig;
+  struct RoomPlacementConfig;
+}
 #include "../Map.hpp"
 #include "GenOptions.hpp"
 #include <random>
@@ -10,6 +16,10 @@ struct RoomsOptions : CommonGenOptions {
   int room_max = 10;
 };
 
+
 // sygnatura modułu – bez zmian
 void generateRoomsModule(Map &m, const RoomsOptions &opt, std::mt19937 &rng);
+
+// New overload using LevelConfig
+void generateRoomsModule(Map &m, const config::LevelConfig &cfg, std::mt19937 &rng);
 } // namespace world
