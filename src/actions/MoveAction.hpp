@@ -2,6 +2,7 @@
 #include "../core/Position.hpp"
 #include "../entities/Entity.hpp"
 #include "../entities/EntityManager.hpp"
+#include "../entities/TurnManager.hpp"
 #include "../world/Map.hpp"
 #include "ActionResult.hpp"
 
@@ -17,7 +18,8 @@ class MoveAction {
 public:
   MoveAction(Entity &actor, Position target);
 
-  ActionResult execute(world::Map &map, entities::EntityManager &entities);
+  ActionResult execute(world::Map &map, entities::EntityManager &entities,
+                       entities::TurnManager &turnMgr);
 
 private:
   Entity &actor_;

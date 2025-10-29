@@ -39,9 +39,9 @@ public:
 
 private:
   std::priority_queue<TurnEntry> queue_;
-  
+
   // Energy cost per turn (can be based on action type later)
-  static constexpr int TURN_COST = 100;
+  static constexpr int TURN_COST = 10;
 };
 
 } // namespace entities

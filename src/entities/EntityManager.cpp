@@ -1,5 +1,6 @@
-#include "src/entities/EntityManager.hpp"
+#include "EntityManager.hpp"
 #include <algorithm>
+#include <memory>
 
 namespace entities {
 
@@ -8,12 +9,11 @@ void EntityManager::addEntity(std::unique_ptr<Entity> entity) {
 }
 
 void EntityManager::removeEntity(Entity *entity) {
-  entities_.erase(
-      std::remove_if(entities_.begin(), entities_.end(),
-                     [entity](const std::unique_ptr<Entity> &e) {
-                       return e.get() == entity;
-                     }),
-      entities_.end());
+  entities_.erase(std::remove_if(entities_.begin(), entities_.end(),
+                                 [entity](const std::unique_ptr<Entity> &e) {
+                                   return e.get() == entity;
+                                 }),
+                  entities_.end());
 }
 
 Entity *EntityManager::getEntityAt(const Position &pos) const {

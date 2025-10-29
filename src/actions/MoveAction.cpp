@@ -1,5 +1,5 @@
-#include "../systems/CombatSystem.hpp"
 #include "MoveAction.hpp"
+#include "../systems/CombatSystem.hpp"
 
 namespace actions {
 
@@ -7,7 +7,8 @@ MoveAction::MoveAction(Entity &actor, Position target)
     : actor_(actor), target_(target) {}
 
 ActionResult MoveAction::execute(world::Map &map,
-                                 entities::EntityManager &entities) {
+                                 entities::EntityManager &entities,
+                                 entities::TurnManager &turnMgr) {
   // Check bounds
   if (!map.inBounds(target_)) {
     return ActionResult::invalid("Out of bounds");
@@ -28,6 +29,7 @@ ActionResult MoveAction::execute(world::Map &map,
     // Remove if killed
     if (result.killed) {
       entities.removeEntity(target_entity);
+      turnMgr.removeEntity(target_entity);
     }
 
     return ActionResult::success(result.message, 100);

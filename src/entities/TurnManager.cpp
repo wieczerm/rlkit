@@ -1,38 +1,50 @@
 #include "src/entities/TurnManager.hpp"
 #include <algorithm>
+#include <fstream>
 
 namespace entities {
 
 void TurnManager::addEntity(Entity *entity) {
-  if (!entity)
-    return;
-  
   int speed = entity->getProperty("speed", 100);
-  queue_.push({entity, speed});
+  queue_.push({entity, 0}); // Start with 0 energy!
 }
 
 void TurnManager::removeEntity(Entity *entity) {
-  if (!entity)
-    return;
-
-  // Rebuild queue without the entity
-  std::vector<TurnEntry> temp;
+  std::priority_queue<TurnEntry> newQueue;
   while (!queue_.empty()) {
     TurnEntry entry = queue_.top();
     queue_.pop();
     if (entry.entity != entity) {
-      temp.push_back(entry);
+      newQueue.push(entry);
     }
   }
-
-  for (const auto &entry : temp) {
-    queue_.push(entry);
-  }
+  queue_ = std::move(newQueue);
 }
 
 Entity *TurnManager::getNextActor() {
   if (queue_.empty())
     return nullptr;
+
+  // Check if anyone can act (energy >= 100)
+  if (queue_.top().energy < 100) {
+    // No one ready - advance time for everyone
+    std::vector<TurnEntry> all;
+    while (!queue_.empty()) {
+      TurnEntry entry = queue_.top();
+      queue_.pop();
+
+      int speed = entry.entity->getProperty("speed", 100);
+      entry.energy += speed;
+
+      all.push_back(entry);
+    }
+
+    // Re-insert all
+    for (const auto &entry : all) {
+      queue_.push(entry);
+    }
+  }
+
   return queue_.top().entity;
 }
 
@@ -43,15 +55,11 @@ Entity *TurnManager::processTurn() {
   TurnEntry current = queue_.top();
   queue_.pop();
 
-  // Reduce energy and re-add if still has energy
-  current.energy -= TURN_COST;
-  if (current.energy > 0) {
-    queue_.push(current);
-  } else {
-    // Refresh energy based on speed
-    int speed = current.entity->getProperty("speed", 100);
-    queue_.push({current.entity, speed});
-  }
+  // Subtract action cost
+  current.energy -= 100;
+
+  // Re-add to queue
+  queue_.push(current);
 
   return current.entity;
 }

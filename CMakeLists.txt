@@ -74,6 +74,21 @@ set(ENTITIES_HEADERS
 )
 add_library(entities STATIC ${ENTITIES_SOURCES} ${ENTITIES_HEADERS})
 target_include_directories(entities PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(entities PUBLIC core)
+
+# --- ai ---
+set(AI_SOURCES
+  src/ai/SimpleAI.cpp
+)
+set(AI_HEADERS
+  src/ai/AIBehavior.hpp
+  src/ai/SimpleAI.hpp
+)
+add_library(ai STATIC ${AI_SOURCES} ${AI_HEADERS})
+target_include_directories(ai PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(ai PUBLIC core world entities actions)
+
+
 # --- world ---
 set(WORLD_SOURCES
   src/world/Map.cpp
@@ -116,7 +131,7 @@ target_link_libraries(ftxui_renderer PUBLIC
 
 # --- demo ---
 add_executable(rl_demo src/main.cpp)
-target_link_libraries(rl_demo PRIVATE core world entities ftxui_renderer systems actions)
+target_link_libraries(rl_demo PRIVATE core world entities ftxui_renderer systems actions ai)
 
 # --- tests ---
 include(CTest)
