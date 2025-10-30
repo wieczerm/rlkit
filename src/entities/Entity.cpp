@@ -29,4 +29,8 @@ bool Entity::hasProperty(const std::string &key) const {
 
 void Entity::setAI(std::unique_ptr<ai::AIBehavior> ai) { ai_ = std::move(ai); }
 
+const std::unordered_map<std::string, int> &Entity::getAllProperties() const {
+  return properties_;
+}
+
 } // namespace entities

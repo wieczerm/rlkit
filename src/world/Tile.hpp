@@ -3,59 +3,24 @@
 
 namespace world {
 
+// Material-based tile types representing terrain layer
 enum class Tile : std::uint8_t {
-  Floor,
-  Wall,
-  DoorClosed,
-  DoorOpen,
-  StairsDown,
-  StairsUp
+  OpenGround,    // walkable terrain: floors, grass, dirt, paths
+  SolidRock,     // impassable solid: walls, mountains, dense stone
+  ShallowLiquid, // difficult terrain: shallow water, mud (predefined, not
+                 // implemented)
+  DeepLiquid,    // impassable liquid: deep water, deep lava (predefined, not
+                 // implemented)
+
+  // Future expansion (placeholder for forward compatibility):
+  // Ice,        // slippery terrain with modified movement
+  // Lava,       // damaging terrain with fire damage
+  // Chasm,      // impassable void/pit
+  // Bridge,     // special walkable over liquid
+  // Sand,       // difficult terrain with movement penalty
 };
 
-inline constexpr bool blocksMovement(Tile t) noexcept {
-  switch (t) {
-  case Tile::Wall:
-    return true;
-  case Tile::DoorClosed:
-    return true;
-  case Tile::Floor:
-    return false;
-  case Tile::DoorOpen:
-    return false;
-  case Tile::StairsDown: // ADD
-    return false;
-  case Tile::StairsUp: // ADD
-    return false;
-  }
-  return true;
-}
-
-inline constexpr bool blocksLineOfSight(Tile t) noexcept {
-  switch (t) {
-  case Tile::Wall:
-    return true;
-  case Tile::DoorClosed:
-    return true;
-  case Tile::Floor:
-    return false;
-  case Tile::DoorOpen:
-    return false;
-  case Tile::StairsDown: // ADD
-    return false;
-  case Tile::StairsUp: // ADD
-    return false;
-  }
-  return true;
-}
-
-inline bool isDoor(Tile t) {
-  return t == Tile::DoorClosed || t == Tile::DoorOpen;
-}
-inline bool isWall(Tile t) { return t == Tile::Wall; }
-inline bool isFloor(Tile t) {
-  return t == Tile::Floor || t == Tile::DoorOpen || t == Tile::DoorClosed;
-}
-inline bool isDoorClosed(Tile t) { return t == Tile::DoorClosed; }
-inline bool isDoorOpen(Tile t) { return t == Tile::DoorOpen; }
+// Number of defined tile types (for iteration/validation)
+constexpr std::size_t TILE_COUNT = 4;
 
 } // namespace world

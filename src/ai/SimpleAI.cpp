@@ -13,6 +13,7 @@ SimpleAI::SimpleAI(int vision_range) : vision_range_(vision_range) {}
 actions::ActionResult SimpleAI::act(entities::Entity &self,
                                     const entities::Entity &player,
                                     world::Map &map,
+                                    world::FeatureManager &features,
                                     entities::EntityManager &entities,
                                     entities::TurnManager &turnMgr) {
 
@@ -42,8 +43,7 @@ actions::ActionResult SimpleAI::act(entities::Entity &self,
   // Move to next position
   core::Position nextPos = path[1];
   actions::MoveAction move(self, nextPos);
-  // actions::MoveAction move(self, {5, 5});
-  return move.execute(map, entities, turnMgr);
+  return move.execute(map, features, entities, turnMgr);
 }
 
 } // namespace ai

@@ -71,14 +71,14 @@ std::string GameViewPanel::render() const {
 
 char GameViewPanel::tileToChar(int tileType) const {
   switch (static_cast<world::Tile>(tileType)) {
-  case world::Tile::Floor:
+  case world::Tile::OpenGround:
     return '.';
-  case world::Tile::Wall:
+  case world::Tile::SolidRock:
     return '#';
-  case world::Tile::DoorClosed:
-    return '+';
-  case world::Tile::DoorOpen:
-    return '\'';
+    //  case world::Tile::DoorClosed:
+    //    return '+';
+    //  case world::Tile::DoorOpen:
+    //    return '\'';
   default:
     return '?';
   }

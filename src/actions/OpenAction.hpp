@@ -7,6 +7,9 @@
 namespace entities {
 class Entity;
 }
+namespace world {
+class FeatureManager;
+}
 
 namespace actions {
 
@@ -16,7 +19,7 @@ class OpenAction {
 public:
   OpenAction(Entity &actor, core::Position target);
 
-  ActionResult execute(world::Map &map);
+  ActionResult execute(world::Map &map, world::FeatureManager &features);
 
 private:
   Entity &actor_;

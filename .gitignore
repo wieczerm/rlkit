@@ -30,6 +30,7 @@ tests/**/bin/
 tests/**/results/
 
 # IDE / misc
+.cache/
 .vscode/
 .idea/
 *.code-workspace

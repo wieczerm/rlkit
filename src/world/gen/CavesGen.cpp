@@ -16,7 +16,7 @@ int countWallNeighbors8(const world::Map &m, int x, int y) {
     for (int xx = x - 1; xx <= x + 1; ++xx) {
       if (xx == x && yy == y)
         continue;
-      if (!m.inBounds(xx, yy) || world::isWall(m.at({xx, yy})))
+      if (!m.inBounds(xx, yy) || world::blocksMovement(m.at({xx, yy})))
         ++c;
     }
   return c;
@@ -24,19 +24,20 @@ int countWallNeighbors8(const world::Map &m, int x, int y) {
 
 // One CA iteration with birth/survive thresholds.
 void caStep(world::Map &m, int birth, int survive) {
-  world::Map next(m.width(), m.height(), world::Tile::Wall);
+  world::Map next(m.width(), m.height(), world::Tile::SolidRock);
   for (int y = 0; y < m.height(); ++y)
     for (int x = 0; x < m.width(); ++x) {
       const bool edge =
           (x == 0 || y == 0 || x == m.width() - 1 || y == m.height() - 1);
       if (edge) {
-        next.set({x, y}, world::Tile::Wall);
+        next.set({x, y}, world::Tile::SolidRock);
         continue;
       }
       const int wn = countWallNeighbors8(m, x, y);
       const bool wall_next =
-          world::isWall(m.at({x, y})) ? (wn >= survive) : (wn >= birth);
-      next.set({x, y}, wall_next ? world::Tile::Wall : world::Tile::Floor);
+          world::blocksMovement(m.at({x, y})) ? (wn >= survive) : (wn >= birth);
+      next.set({x, y},
+               wall_next ? world::Tile::SolidRock : world::Tile::OpenGround);
     }
   // copy back
   for (int y = 0; y < m.height(); ++y)
@@ -58,7 +59,8 @@ size_t labelComponents(const world::Map &m, std::vector<CompId> &lbl) {
   for (int y = 0; y < H; ++y)
     for (int x = 0; x < W; ++x) {
       const auto k = id(x, y);
-      if (!world::isFloor(m.at({x, y})) || lbl[k] != Invalid)
+      if (world::getProperties(m.at({x, y})).movement_cost < 0 ||
+          lbl[k] != Invalid)
         continue;
 
       lbl[k] = comps;
@@ -72,7 +74,8 @@ size_t labelComponents(const world::Map &m, std::vector<CompId> &lbl) {
           if (!m.inBounds(nx, ny))
             continue;
           const auto kk = id(nx, ny);
-          if (!world::isFloor(m.at({nx, ny})) || lbl[kk] != Invalid)
+          if (world::getProperties(m.at({nx, ny})).movement_cost < 0 ||
+              lbl[kk] != Invalid)
             continue;
           lbl[kk] = comps;
           q.push({nx, ny});
@@ -90,14 +93,14 @@ void carveLCorridorThroughWalls(world::Map &m, core::Position a,
     return;
   if (a.x <= b.x) {
     for (int x = std::min(a.x, b.x); x <= std::max(a.x, b.x); ++x)
-      m.set({x, a.y}, world::Tile::Floor);
+      m.set({x, a.y}, world::Tile::OpenGround);
     for (int y = std::min(a.y, b.y); y <= std::max(a.y, b.y); ++y)
-      m.set({b.x, y}, world::Tile::Floor);
+      m.set({b.x, y}, world::Tile::OpenGround);
   } else {
     for (int y = std::min(a.y, b.y); y <= std::max(a.y, b.y); ++y)
-      m.set({a.x, y}, world::Tile::Floor);
+      m.set({a.x, y}, world::Tile::OpenGround);
     for (int x = std::min(a.x, b.x); x <= std::max(a.x, b.x); ++x)
-      m.set({x, b.y}, world::Tile::Floor);
+      m.set({x, b.y}, world::Tile::OpenGround);
   }
 }
 
@@ -180,7 +183,7 @@ void generateCavesModuleImpl(Map &m, const CavesOptions &opt,
                              const ::config::CaveGenerationConfig &caveGen,
                              std::mt19937 &G) {
 
-  m.fill(Tile::Wall);
+  m.fill(Tile::SolidRock);
 
   // Seed phase (random interior, solid border).
   std::uniform_int_distribution<int> pct(caveGen.random_percent_min,
@@ -190,9 +193,10 @@ void generateCavesModuleImpl(Map &m, const CavesOptions &opt,
       const bool edge =
           (x == 0 || y == 0 || x == m.width() - 1 || y == m.height() - 1);
       if (edge)
-        m.set({x, y}, Tile::Wall);
+        m.set({x, y}, Tile::SolidRock);
       else
-        m.set({x, y}, (pct(G) < opt.fill_percent) ? Tile::Wall : Tile::Floor);
+        m.set({x, y},
+              (pct(G) < opt.fill_percent) ? Tile::SolidRock : Tile::OpenGround);
     }
 
   // CA smoothing passes.

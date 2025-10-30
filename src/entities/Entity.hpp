@@ -23,6 +23,7 @@ public:
 
   char getGlyph() const { return glyph_; }
   void setGlyph(char g) { glyph_ = g; }
+  const std::unordered_map<std::string, int> &getAllProperties() const;
 
   // Generic property system
   void setProperty(const std::string &key, int value);

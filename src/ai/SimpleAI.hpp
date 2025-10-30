@@ -13,6 +13,7 @@ public:
 
   actions::ActionResult act(entities::Entity &self,
                             const entities::Entity &player, world::Map &map,
+                            world::FeatureManager &features,
                             entities::EntityManager &entities,
                             entities::TurnManager &turnMgr) override;
 

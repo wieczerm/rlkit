@@ -12,6 +12,7 @@ class FOV;
 }
 namespace world {
 class Map;
+class FeatureManager;
 }
 namespace entities {
 class EntityManager;
@@ -22,6 +23,7 @@ namespace renderers {
 
 struct GameState {
   const world::Map *map = nullptr;
+  const world::FeatureManager *features = nullptr;
   const core::FOV *fov = nullptr;
   const entities::EntityManager *entities = nullptr;
   const entities::Entity *player = nullptr;

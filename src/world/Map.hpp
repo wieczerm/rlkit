@@ -1,5 +1,6 @@
 #pragma once
 #include "Tile.hpp"
+#include "TileProperties.hpp"
 #include "core/Position.hpp"
 #include <cassert>
 #include <cstddef>
@@ -9,7 +10,7 @@ namespace world {
 
 class Map {
 public:
-  Map(int w, int h, Tile fill = Tile::Wall)
+  Map(int w, int h, Tile fill = Tile::SolidRock)
       : w_(w), h_(h),
         data_(static_cast<std::size_t>(w) * static_cast<std::size_t>(h), fill) {
     assert(w_ > 0 && h_ > 0);
@@ -46,17 +47,17 @@ public:
     if (x < 0 || x >= w_ || y < 0 || y >= h_) {
       return true; // poza mapą traktujemy jako blokadę
     }
-    return ::world::blocksLineOfSight(data_[idx({x, y})]);
+    return world::blocksLineOfSight(data_[idx({x, y})]);
   }
 
   bool blocksMovement(core::Position p) const noexcept {
     if (!inBounds(p))
       return true;
-    return ::world::blocksMovement(at(p));
+    return world::blocksMovement(at(p));
   }
 
   inline bool blocksLineOfSight(core::Position p) const noexcept {
-    return ::world::blocksLineOfSight(at(p));
+    return world::blocksLineOfSight(at(p));
   }
 
 private:

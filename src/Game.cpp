@@ -15,11 +15,11 @@
 #include "entities/Entity.hpp"
 #include "entities/EntityManager.hpp"
 #include "entities/TurnManager.hpp"
+#include "world/FeatureProperties.hpp"
 #include "world/Map.hpp"
 #include "world/MapViewAdapter.hpp"
 #include "world/Tile.hpp"
-#include "world/gen/MapGenerator.hpp"
-#include "world/gen/RoomsGen.hpp"
+#include "world/gen/LevelGenerator.hpp"
 
 #include <fstream>
 #include <iostream>
@@ -38,64 +38,6 @@ Game::Game()
   addMessage("Welcome to the dungeon!");
   addMessage("Use hjkl/WASD to move, x to look, > to descend, q to quit");
 }
-/*
-Game::Game()
-    : playerPtr_(nullptr), running_(true), turnCounter_(0), depth_(1),
-      lookModeActive_(false), lookCursor_{0, 0} {
-
-  // Generate map
-  constexpr int MAP_W = 60, MAP_H = 40;
-  map_ = std::make_unique<world::Map>(MAP_W, MAP_H, world::Tile::Wall);
-
-  world::MapGenerator gen(12345);
-  world::RoomsOptions opts;
-  opts.max_rooms = 15;
-  opts.room_min = 4;
-  opts.room_max = 8;
-  opts.add_doors = true;
-  gen.generateRooms(*map_, opts);
-
-  // Setup systems
-  mapView_ = std::make_unique<world::MapViewAdapter>(*map_);
-  fov_ = std::make_unique<core::FOV>(*mapView_);
-  entityMgr_ = std::make_unique<entities::EntityManager>();
-  turnMgr_ = std::make_unique<entities::TurnManager>();
-
-  inputMapper_ = std::make_unique<core::InputMapper>(core::Scheme::Vi);
-
-  // Setup renderer (simplified!)
-  renderer_ = std::make_unique<renderers::FTXUIRenderer>(50, 19);
-
-  // Create player
-  auto player =
-      std::make_unique<entities::Entity>("Player", core::Position{5, 5});
-  player->setMaxHP(100);
-  player->setHP(100);
-  player->setProperty("str", 10);
-  player->setProperty("speed", 100);
-  player->setGlyph('@');
-  playerPtr_ = player.get();
-  entityMgr_->addEntity(std::move(player));
-  turnMgr_->addEntity(playerPtr_);
-
-  generateLevel();
-
-
-  // Initial FOV and discovery
-  fov_->compute(playerPtr_->getPosition(), 8);
-
-  for (int y = 0; y < MAP_H; ++y) {
-     for (int x = 0; x < MAP_W; ++x) {
-       if (fov_->isVisible(x, y)) {
-         discoveredTiles_.push_back({x, y});
-       }
-     }
-   }
-
-  // Initial messages
-  addMessage("Welcome to the dungeon!");
-  addMessage("Use hjkl/WASD to move, x to look, q to quit");
-}*/
 
 Game::~Game() = default;
 
@@ -112,6 +54,7 @@ void Game::render() {
   // Build game state
   renderers::GameState state;
   state.map = map_.get();
+  state.features = featureMgr_.get();
   state.fov = fov_.get();
   state.entities = entityMgr_.get();
   state.player = playerPtr_;
@@ -156,18 +99,27 @@ void Game::handleInput() {
   // Handle player actions
   if (action == core::InputAction::Open) {
     core::Position target = playerPtr_->getPosition();
-    if (world::isDoor(map_->at({target.x, target.y + 1}))) {
+
+    // Check adjacent positions for doors (via Features)
+    auto checkDoor = [this](core::Position pos) -> bool {
+      if (!map_->inBounds(pos))
+        return false;
+      const world::Feature *f = featureMgr_->getFeature(pos);
+      return f && world::isDoor(*f);
+    };
+
+    if (checkDoor({target.x, target.y + 1})) {
       target.y += 1;
-    } else if (world::isDoor(map_->at({target.x, target.y - 1}))) {
+    } else if (checkDoor({target.x, target.y - 1})) {
       target.y -= 1;
-    } else if (world::isDoor(map_->at({target.x - 1, target.y}))) {
+    } else if (checkDoor({target.x - 1, target.y})) {
       target.x -= 1;
-    } else if (world::isDoor(map_->at({target.x + 1, target.y}))) {
+    } else if (checkDoor({target.x + 1, target.y})) {
       target.x += 1;
     }
 
     actions::OpenAction open(*playerPtr_, target);
-    auto result = open.execute(*map_);
+    auto result = open.execute(*map_, *featureMgr_);
     addMessage(result.message);
 
     if (result.status == actions::ActionStatus::Success) {
@@ -182,7 +134,7 @@ void Game::handleInput() {
     core::Position newPos = playerPtr_->getPosition() + delta;
 
     actions::MoveAction move(*playerPtr_, newPos);
-    auto result = move.execute(*map_, *entityMgr_, *turnMgr_);
+    auto result = move.execute(*map_, *featureMgr_, *entityMgr_, *turnMgr_);
 
     if (result.status == actions::ActionStatus::Success) {
       if (!result.message.empty()) {
@@ -224,95 +176,6 @@ void Game::handleInput() {
   }
 }
 
-/*void Game::generateLevel() {
-  constexpr int MAP_W = 60, MAP_H = 40;
-
-  // PRESERVE HP FIRST - before destroying anything!
-  int preservedHP = 100; // Default
-  if (playerPtr_ != nullptr) {
-    preservedHP = playerPtr_->getProperty("hp");
-  }
-
-  // NOW destroy old entities
-  map_ = std::make_unique<world::Map>(MAP_W, MAP_H, world::Tile::Wall);
-  entityMgr_ = std::make_unique<entities::EntityManager>();
-  turnMgr_ = std::make_unique<entities::TurnManager>();
-
-  // Generate map
-  world::MapGenerator gen(std::random_device{}());
-  world::RoomsOptions opts;
-  opts.max_rooms = 15;
-  opts.room_min = 4;
-  opts.room_max = 8;
-  opts.add_doors = true;
-  gen.generateRooms(*map_, opts);
-
-  // Find spawn position
-  core::Position spawnPos{5, 5};
-  bool foundSpawn = false;
-  for (int y = 1; y < MAP_H - 1 && !foundSpawn; ++y) {
-    for (int x = 1; x < MAP_W - 1; ++x) {
-      if (map_->at({x, y}) == world::Tile::Floor) {
-        spawnPos = {x, y};
-        foundSpawn = true;
-        break;
-      }
-    }
-  }
-
-  // Create player
-  auto player = std::make_unique<entities::Entity>("Player", spawnPos);
-  player->setMaxHP(100);
-  player->setHP(preservedHP); // Use preserved value
-  player->setProperty("str", 20);
-  player->setProperty("speed", 100);
-  player->setGlyph('@');
-  playerPtr_ = player.get();
-  entityMgr_->addEntity(std::move(player));
-  turnMgr_->addEntity(playerPtr_);
-
-  // Spawn monsters
-  std::mt19937 rng(std::random_device{}());
-  for (int i = 0; i < 20; ++i) {
-    int attempts = 0;
-    while (attempts < 100) {
-      int x = 1 + (rng() % (MAP_W - 2));
-      int y = 1 + (rng() % (MAP_H - 2));
-      if (!map_->blocksMovement({x, y}) && !entityMgr_->getEntityAt({x, y})) {
-        auto monster =
-            std::make_unique<entities::Entity>("Goblin", core::Position{x, y});
-        monster->setMaxHP(30);
-        monster->setHP(20);
-        monster->setProperty("str", 5);
-        monster->setProperty("phys_res", 10);
-        monster->setProperty("speed", 100);
-        monster->setGlyph('g');
-        monster->setAI(std::make_unique<ai::SimpleAI>(8));
-        entities::Entity *monsterPtr = monster.get();
-        entityMgr_->addEntity(std::move(monster));
-        turnMgr_->addEntity(monsterPtr);
-        break;
-      }
-      ++attempts;
-    }
-  }
-
-  // Reset FOV
-  mapView_ = std::make_unique<world::MapViewAdapter>(*map_);
-  fov_ = std::make_unique<core::FOV>(*mapView_);
-  fov_->compute(playerPtr_->getPosition(), 8);
-
-  // Reset discovered tiles
-  discoveredTiles_.clear();
-  for (int y = 0; y < MAP_H; ++y) {
-    for (int x = 0; x < MAP_W; ++x) {
-      if (fov_->isVisible(x, y)) {
-        discoveredTiles_.push_back({x, y});
-      }
-    }
-  }
-}*/
-
 void Game::generateLevel() {
   constexpr int MAP_W = 60, MAP_H = 40;
 
@@ -322,44 +185,32 @@ void Game::generateLevel() {
     preservedHP = playerPtr_->getProperty("hp");
   }
 
-  // Clear existing map and entities
-  map_ = std::make_unique<world::Map>(MAP_W, MAP_H, world::Tile::Wall);
+  // Clear existing entities
   entityMgr_ = std::make_unique<entities::EntityManager>();
   turnMgr_ = std::make_unique<entities::TurnManager>();
 
-  // Generate map
-  world::MapGenerator gen(std::random_device{}());
-  world::RoomsOptions opts;
-  opts.max_rooms = 15;
-  opts.room_min = 4;
-  opts.room_max = 8;
-  opts.add_doors = true;
-  gen.generateRooms(*map_, opts);
+  // Generate level using new LevelGenerator
+  std::mt19937 rng(std::random_device{}());
+  world::LevelGenerator generator(rng);
+  world::LevelData levelData = generator.generateLevel(MAP_W, MAP_H, depth_);
 
-  // DEBUG - count stairs
+  // Take ownership of generated map and features
+  map_ = std::move(levelData.map);
+  featureMgr_ = std::move(levelData.features);
+
+  // DEBUG - count stairs via features
   int stairsCount = 0;
-  for (int y = 0; y < MAP_H; ++y) {
-    for (int x = 0; x < MAP_W; ++x) {
-      if (map_->at({x, y}) == world::Tile::StairsDown) {
-        stairsCount++;
-      }
+  for (const auto &pos : featureMgr_->getAllPositions()) {
+    const world::Feature *f = featureMgr_->getFeature(pos);
+    if (f && world::isStairs(*f)) {
+      stairsCount++;
     }
   }
   addMessage("Generated level with " + std::to_string(stairsCount) + " stairs");
   // end DEBUG
 
-  // Find valid spawn position (not on stairs)
-  core::Position spawnPos{5, 5};
-  bool foundSpawn = false;
-  for (int y = 1; y < MAP_H - 1 && !foundSpawn; ++y) {
-    for (int x = 1; x < MAP_W - 1; ++x) {
-      if (map_->at({x, y}) == world::Tile::Floor) {
-        spawnPos = {x, y};
-        foundSpawn = true;
-        break;
-      }
-    }
-  }
+  // Use generated spawn position
+  core::Position spawnPos = levelData.player_spawn;
 
   // Recreate player at spawn
   auto player = std::make_unique<entities::Entity>("Player", spawnPos);
@@ -372,30 +223,19 @@ void Game::generateLevel() {
   entityMgr_->addEntity(std::move(player));
   turnMgr_->addEntity(playerPtr_);
 
-  // Spawn monsters
-  std::mt19937 rng(std::random_device{}());
-  for (int i = 0; i < 20; ++i) {
-    int attempts = 0;
-    while (attempts < 100) {
-      int x = 1 + (rng() % (MAP_W - 2));
-      int y = 1 + (rng() % (MAP_H - 2));
-      if (!map_->blocksMovement({x, y}) && !entityMgr_->getEntityAt({x, y})) {
-        auto monster =
-            std::make_unique<entities::Entity>("Goblin", core::Position{x, y});
-        monster->setMaxHP(30);
-        monster->setHP(20);
-        monster->setProperty("str", 2);
-        monster->setProperty("phys_res", 2);
-        monster->setProperty("speed", 100);
-        monster->setGlyph('g');
-        monster->setAI(std::make_unique<ai::SimpleAI>(8));
-        entities::Entity *monsterPtr = monster.get();
-        entityMgr_->addEntity(std::move(monster));
-        turnMgr_->addEntity(monsterPtr);
-        break;
-      }
-      ++attempts;
-    }
+  // Spawn monsters at generated positions
+  for (const auto &monsterPos : levelData.monster_spawns) {
+    auto monster = std::make_unique<entities::Entity>("Goblin", monsterPos);
+    monster->setMaxHP(30);
+    monster->setHP(20);
+    monster->setProperty("str", 2);
+    monster->setProperty("phys_res", 2);
+    monster->setProperty("speed", 100);
+    monster->setGlyph('g');
+    monster->setAI(std::make_unique<ai::SimpleAI>(8));
+    entities::Entity *monsterPtr = monster.get();
+    entityMgr_->addEntity(std::move(monster));
+    turnMgr_->addEntity(monsterPtr);
   }
 
   // Reset FOV and discovered tiles
@@ -413,30 +253,6 @@ void Game::generateLevel() {
   }
 }
 
-/*void Game::descendStairs() {
-  // Check if player is on stairs
-  int currentHP = playerPtr_->getProperty("hp");
-  core::Position playerPos = playerPtr_->getPosition();
-  world::Tile tile = map_->at(playerPos);
-
-  if (tile != world::Tile::StairsDown) {
-    addMessage("There are no stairs here.");
-    return;
-  }
-
-  // Descend!
-  depth_++;
-  addMessage("You descend the stairs...");
-
-  // Generate new level
-  generateLevel();
-
-  // Restore player HP (generateLevel creates new player entity)
-  playerPtr_->setProperty("hp", currentHP);
-
-  addMessage("Welcome to depth " + std::to_string(depth_) + "!");
-}*/
-
 void Game::descendStairs() {
   std::cout << "descendStairs() - start\n";
   std::cout.flush();
@@ -450,11 +266,14 @@ void Game::descendStairs() {
   std::cout << "Position: " << playerPos.x << "," << playerPos.y << "\n";
   std::cout.flush();
 
-  world::Tile tile = map_->at(playerPos);
-  std::cout << "Tile: " << static_cast<int>(tile) << "\n";
+  // Check if there's a stairs feature at player position
+  const world::Feature *feature = featureMgr_->getFeature(playerPos);
+  bool hasStairs = feature && world::isStairs(*feature);
+
+  std::cout << "Has stairs feature: " << hasStairs << "\n";
   std::cout.flush();
 
-  if (tile != world::Tile::StairsDown) {
+  if (!hasStairs) {
     std::cout << "Not on stairs\n";
     addMessage("There are no stairs here.");
     return;
@@ -530,8 +349,8 @@ void Game::processAITurns() {
     }
 
     if (actor->hasAI()) {
-      auto result = actor->getAI()->act(*actor, *playerPtr_, *map_, *entityMgr_,
-                                        *turnMgr_);
+      auto result = actor->getAI()->act(*actor, *playerPtr_, *map_,
+                                        *featureMgr_, *entityMgr_, *turnMgr_);
       if (!result.message.empty()) {
         addMessage(result.message);
       }
@@ -555,20 +374,39 @@ std::string Game::getInfoAt(const core::Position &pos,
     return info.str();
   }
 
-  world::Tile tile = map_->at(pos);
-  switch (tile) {
-  case world::Tile::Floor:
-    info << "Floor";
-    break;
-  case world::Tile::Wall:
-    info << "Wall";
-    break;
-  case world::Tile::DoorClosed:
-    info << "Closed door";
-    break;
-  case world::Tile::DoorOpen:
-    info << "Open door";
-    break;
+  // Check for features first (stairs, doors)
+  const world::Feature *feature = featureMgr_->getFeature(pos);
+  if (feature) {
+    if (world::isStairs(*feature)) {
+      const world::Stairs *stairs = world::getStairs(*feature);
+      info << (stairs->direction == world::Stairs::Direction::Down
+                   ? "Stairs down"
+                   : "Stairs up");
+    } else if (world::isDoor(*feature)) {
+      const world::Door *door = world::getDoor(*feature);
+      info << (door->state == world::Door::State::Closed ? "Closed door"
+                                                         : "Open door");
+    }
+  } else {
+    // No feature, show tile
+    world::Tile tile = map_->at(pos);
+    switch (tile) {
+    case world::Tile::OpenGround:
+      info << "Floor";
+      break;
+    case world::Tile::SolidRock:
+      info << "Wall";
+      break;
+      /*    case world::Tile::DoorClosed:
+            info << "Closed door (legacy)";
+            break;
+          case world::Tile::DoorOpen:
+            info << "Open door (legacy)";
+            break;*/
+    default:
+      info << "Unknown";
+      break;
+    }
   }
 
   entities::Entity *entity = entityMgr_->getEntityAt(pos);

@@ -2,6 +2,8 @@
 #include "core/FOV.hpp"
 #include "entities/Entity.hpp"
 #include "entities/EntityManager.hpp"
+#include "world/FeatureManager.hpp"
+#include "world/FeatureProperties.hpp"
 #include "world/Map.hpp"
 #include "world/Tile.hpp"
 
@@ -83,7 +85,17 @@ Element FTXUIRenderer::buildGameView(const GameState &state) {
         continue;
       }
 
-      // Tile
+      // Feature (doors, stairs)
+      if (state.features) {
+        const world::Feature *feature =
+            state.features->getFeature({worldX, worldY});
+        if (feature) {
+          line += world::getGlyph(*feature);
+          continue;
+        }
+      }
+
+      // Tile (floor, wall)
       line += tileToChar(state.map->at({worldX, worldY}));
     }
     lines.push_back(line);
@@ -271,18 +283,16 @@ Element FTXUIRenderer::buildStatsBar(const GameState &state) {
 
 char FTXUIRenderer::tileToChar(world::Tile tile) const {
   switch (tile) {
-  case world::Tile::Floor:
+  case world::Tile::OpenGround:
     return '.';
-  case world::Tile::Wall:
+  case world::Tile::SolidRock:
     return '#';
-  case world::Tile::DoorClosed:
-    return '+';
-  case world::Tile::DoorOpen:
-    return '\'';
-  case world::Tile::StairsDown:
-    return '>'; // ← To musi być
-  case world::Tile::StairsUp:
-    return '<';
+    /*  case world::Tile::DoorClosed:
+        return '+'; // Legacy - doors are now Features, but keep for
+      compatibility case world::Tile::DoorOpen: return '\''; // Legacy - doors
+      are now Features case world::Tile::StairsDown: return '>'; // Legacy -
+      stairs are now Features case world::Tile::StairsUp: return '<'; // Legacy
+      - stairs are now Features */
   default:
     return '?';
   }

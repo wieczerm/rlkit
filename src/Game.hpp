@@ -3,6 +3,7 @@
 #include "entities/TurnManager.hpp"
 #include "renderers/FTXUIRenderer.hpp"
 #include "world/Map.hpp"
+#include "world/FeatureManager.hpp"
 #include "world/MapViewAdapter.hpp"
 #include <memory>
 #include <string>
@@ -32,6 +33,7 @@ private:
 
   // Game state
   std::unique_ptr<world::Map> map_;
+  std::unique_ptr<world::FeatureManager> featureMgr_;
   std::unique_ptr<world::MapViewAdapter> mapView_;
   std::unique_ptr<core::FOV> fov_;
   std::unique_ptr<entities::EntityManager> entityMgr_;

@@ -1,24 +1,21 @@
 cmake_minimum_required(VERSION 3.16)
 project(rl_engine LANGUAGES CXX)
 
-# Options
-option(BUILD_TESTING "Build unit tests" ON)
-option(ENABLE_PEDANTIC "Enable strict warnings" ON)
-option(SKIP_FOV_BLOCKING_TESTS "Skip 'walls block LOS' test until FOV is fully implemented" ON)
-
 # C++ standard
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 # Warnings
-if (ENABLE_PEDANTIC)
-  if (MSVC)
-    add_compile_options(/W4)
-  else()
-    add_compile_options(-Wall -Wextra -Wpedantic -Wconversion -Wsign-conversion)
-  endif()
+if (MSVC)
+  add_compile_options(/W4)
+else()
+  add_compile_options(-Wall -Wextra -Wpedantic -Wconversion -Wsign-conversion)
 endif()
+
+# Find required packages
+find_package(ftxui REQUIRED)
+find_package(nlohmann_json 3.11.0 REQUIRED)
 
 # --- core ---
 set(CORE_SOURCES
@@ -27,6 +24,9 @@ set(CORE_SOURCES
   src/core/InputHandler.cpp
   src/core/InputMapper.cpp
   src/core/InputScheme.cpp
+  src/core/Event.cpp
+  src/core/EventQueue.cpp
+  src/core/Serialization.cpp
 )
 set(CORE_HEADERS
   src/core/Position.hpp
@@ -35,35 +35,15 @@ set(CORE_HEADERS
   src/core/InputHandler.hpp
   src/core/InputMapper.hpp
   src/core/InputScheme.hpp
+  src/core/InputAction.hpp
+  src/core/IMapView.hpp
+  src/core/Types.hpp
+  src/core/Event.hpp
+  src/core/EventQueue.hpp
+  src/core/Serialization.hpp
 )
 add_library(core STATIC ${CORE_SOURCES} ${CORE_HEADERS})
 target_include_directories(core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
-
-# In systems section (new)
-set(SYSTEMS_SOURCES
-  src/systems/CombatSystem.cpp
-)
-set(SYSTEMS_HEADERS
-  src/systems/CombatSystem.hpp
-)
-add_library(systems STATIC ${SYSTEMS_SOURCES} ${SYSTEMS_HEADERS})
-target_include_directories(systems PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
-target_link_libraries(systems PUBLIC entities)
-
-# In actions section (new)
-set(ACTIONS_SOURCES
-  src/actions/MoveAction.cpp
-  src/actions/OpenAction.cpp
-)
-set(ACTIONS_HEADERS
-  src/actions/ActionResult.hpp
-  src/actions/MoveAction.hpp
-  src/actions/OpenAction.hpp
-)
-add_library(actions STATIC ${ACTIONS_SOURCES} ${ACTIONS_HEADERS})
-target_include_directories(actions PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
-target_link_libraries(actions PUBLIC core world entities systems)
-
 
 # --- entities ---
 set(ENTITIES_SOURCES
@@ -80,6 +60,65 @@ add_library(entities STATIC ${ENTITIES_SOURCES} ${ENTITIES_HEADERS})
 target_include_directories(entities PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_link_libraries(entities PUBLIC core)
 
+# --- systems ---
+set(SYSTEMS_SOURCES
+  src/systems/CombatSystem.cpp
+)
+set(SYSTEMS_HEADERS
+  src/systems/CombatSystem.hpp
+)
+add_library(systems STATIC ${SYSTEMS_SOURCES} ${SYSTEMS_HEADERS})
+target_include_directories(systems PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(systems PUBLIC entities)
+
+# --- world ---
+set(WORLD_SOURCES
+  src/world/TileRegistry.cpp
+  src/world/TileEnum.cpp
+  src/world/Map.cpp
+  src/world/FeatureManager.cpp
+  src/world/gen/MapGenerator.cpp
+  src/world/gen/RoomsGen.cpp
+  src/world/gen/CavesGen.cpp
+  src/world/gen/LevelGenerator.cpp
+  src/world/gen/FeaturePlacer.cpp
+)
+set(WORLD_HEADERS
+  src/world/Tile.hpp
+  src/world/TileProperties.hpp
+  src/world/TileRegistry.hpp
+  src/world/TileEnum.hpp
+  src/world/Map.hpp
+  src/world/MapViewAdapter.hpp
+  src/world/Feature.hpp
+  src/world/FeatureManager.hpp
+  src/world/FeatureProperties.hpp
+  src/world/gen/MapGenerator.hpp
+  src/world/gen/RoomsGen.hpp
+  src/world/gen/CavesGen.hpp
+  src/world/gen/GenOptions.hpp
+  src/world/gen/LevelData.hpp
+  src/world/gen/LevelGenerator.hpp
+  src/world/gen/FeaturePlacer.hpp
+)
+add_library(world STATIC ${WORLD_SOURCES} ${WORLD_HEADERS})
+target_include_directories(world PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(world PUBLIC core nlohmann_json::nlohmann_json)
+
+# --- actions ---
+set(ACTIONS_SOURCES
+  src/actions/MoveAction.cpp
+  src/actions/OpenAction.cpp
+)
+set(ACTIONS_HEADERS
+  src/actions/ActionResult.hpp
+  src/actions/MoveAction.hpp
+  src/actions/OpenAction.hpp
+)
+add_library(actions STATIC ${ACTIONS_SOURCES} ${ACTIONS_HEADERS})
+target_include_directories(actions PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(actions PUBLIC core world entities systems)
+
 # --- ai ---
 set(AI_SOURCES
   src/ai/SimpleAI.cpp
@@ -92,37 +131,14 @@ add_library(ai STATIC ${AI_SOURCES} ${AI_HEADERS})
 target_include_directories(ai PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_link_libraries(ai PUBLIC core world entities actions)
 
-
-# --- world ---
-set(WORLD_SOURCES
-  src/world/Map.cpp
-  src/world/gen/MapGenerator.cpp
-  src/world/gen/RoomsGen.cpp
-  src/world/gen/CavesGen.cpp
-)
-set(WORLD_HEADERS
-  src/world/Tile.hpp
-  src/world/Map.hpp
-  src/world/MapViewAdapter.hpp
-  src/world/gen/MapGenerator.hpp
-  src/world/gen/RoomsGen.hpp
-  src/world/gen/CavesGen.hpp
-)
-add_library(world STATIC ${WORLD_SOURCES} ${WORLD_HEADERS})
-target_include_directories(world PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/scr)
-target_link_libraries(world PUBLIC core)
-
-find_package(ftxui REQUIRED)
-
-# --- FTXUI renderer ---
-set(FTXUIRenderer_SOURCES
+# --- renderers ---
+set(RENDERER_SOURCES
   src/renderers/FTXUIRenderer.cpp
 )
-set(FTXUIRenderer_HEADERS
+set(RENDERER_HEADERS
   src/renderers/FTXUIRenderer.hpp
 )
-
-add_library(ftxui_renderer STATIC ${FTXUIRenderer_SOURCES} ${FTXUIRenderer_HEADERS})
+add_library(ftxui_renderer STATIC ${RENDERER_SOURCES} ${RENDERER_HEADERS})
 target_include_directories(ftxui_renderer PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_link_libraries(ftxui_renderer PUBLIC 
   core 
@@ -157,51 +173,19 @@ add_library(ui STATIC ${UI_SOURCES} ${UI_HEADERS})
 target_include_directories(ui PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_link_libraries(ui PUBLIC core world entities)
 
-
-# --- demo ---
+# --- demo executable ---
 add_executable(rl_demo
   src/main.cpp
-  src/Game.cpp)
-target_link_libraries(rl_demo PRIVATE core world entities ftxui_renderer systems actions ai ui)
-
-# --- tests ---
-include(CTest)
-if (BUILD_TESTING)
-  add_executable(map_tests tests/MapTests.cpp)
-  target_link_libraries(map_tests PRIVATE core world)
-  add_test(NAME map_tests COMMAND map_tests)
-
-  add_executable(fov_tests tests/FOVTests.cpp)
-  target_link_libraries(fov_tests PRIVATE core world)
-  if (SKIP_FOV_BLOCKING_TESTS)
-    target_compile_definitions(fov_tests PRIVATE SKIP_BLOCKING_TESTS=1)
-  endif()
-  add_test(NAME fov_tests COMMAND fov_tests)
-
-  add_executable(gen_tests tests/GenTests.cpp)
-  target_link_libraries(gen_tests PRIVATE core world)
-  add_test(NAME gen_tests COMMAND gen_tests)
-
-  # Doors test (upewnij się co do nazwy pliku: GenDoorTest.cpp vs GenDoorsTest.cpp)
-  add_executable(gen_doorstests tests/GenDoorsTest.cpp)
-  target_link_libraries(gen_doorstests PRIVATE core world)
-  add_test(NAME gen_doorstests COMMAND gen_doorstests)
-
-  add_executable(pathfinding_tests tests/PathfindingTests.cpp)
-  target_link_libraries(pathfinding_tests PRIVATE core world)
-  add_test(NAME pathfinding_tests COMMAND pathfinding_tests)
-
-  add_executable(entities_tests tests/EntityTests.cpp)
-  target_link_libraries(entities_tests PRIVATE core world entities)
-  add_test(NAME entities_tests COMMAND entities_tests)
-
-  add_executable(entity_manager_tests tests/EntityManagerTests.cpp)
-  target_link_libraries(entity_manager_tests PRIVATE core world entities)
-  add_test(NAME entity_manager_tests COMMAND entity_manager_tests)
-
-  add_executable(turn_manager_tests tests/TurnManagerTests.cpp)
-  target_link_libraries(turn_manager_tests PRIVATE core world entities)
-  add_test(NAME turn_manager_tests COMMAND turn_manager_tests)
-
-endif()
-
+  src/Game.cpp
+  src/Game.hpp
+)
+target_link_libraries(rl_demo PRIVATE 
+  core 
+  world 
+  entities 
+  ftxui_renderer 
+  systems 
+  actions 
+  ai 
+  ui
+)

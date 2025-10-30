@@ -1,0 +1,28 @@
+{
+  "tiles": {
+    "OpenGround": {
+      "movement_cost": 150,
+      "blocks_los": false,
+      "damage_immediate": 5,
+      "damage_per_turn": 1
+    },
+    "SolidRock": {
+      "movement_cost": -1,
+      "blocks_los": true,
+      "damage_immediate": 10,
+      "damage_per_turn": 0
+    },
+    "ShallowLiquid": {
+      "movement_cost": 300,
+      "blocks_los": true,
+      "damage_immediate": 2,
+      "damage_per_turn": 3
+    },
+    "DeepLiquid": {
+      "movement_cost": 400,
+      "blocks_los": false,
+      "damage_immediate": 20,
+      "damage_per_turn": 10
+    }
+  }
+}

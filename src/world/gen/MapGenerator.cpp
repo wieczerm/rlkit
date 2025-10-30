@@ -1,5 +1,5 @@
-#include "MapGenerator.hpp"
 #include "CavesGen.hpp"
+#include "MapGenerator.hpp"
 #include "RoomsGen.hpp"
 #include <algorithm>
 
@@ -29,17 +29,17 @@ void MapGenerator::generateCaves(Map &m, const CavesOptions &opt) {
   if (opt.add_doors)
     placeDoors(m); // usually keep false for caves
 }
-
+/*
 void MapGenerator::placeDoors(Map &m) {
   for (int y = 1; y < m.height() - 1; ++y) {
     for (int x = 1; x < m.width() - 1; ++x) {
-      if (!isWall(m.at({x, y})))
+      if (m.at({x, y}) != world::Tile::SolidRock)
         continue;
 
-      const bool floorL = isFloor(m.at({x - 1, y}));
-      const bool floorR = isFloor(m.at({x + 1, y}));
-      const bool floorU = isFloor(m.at({x, y - 1}));
-      const bool floorD = isFloor(m.at({x, y + 1}));
+      const bool floorL = m.at({x - 1, y}) == world::Tile::OpenGround;
+      const bool floorR = m.at({x + 1, y}) == world::Tile::OpenGround;
+      const bool floorU = m.at({x, y - 1}) == world::Tile::OpenGround;
+      const bool floorD = m.at({x, y + 1}) == world::Tile::OpenGround;
 
       const bool horiz = floorL && floorR && !floorU && !floorD;
       const bool vert = floorU && floorD && !floorL && !floorR;
@@ -48,6 +48,6 @@ void MapGenerator::placeDoors(Map &m) {
         m.set({x, y}, Tile::DoorClosed);
     }
   }
-}
+}*/
 
 } // namespace world

@@ -9,6 +9,9 @@
 namespace entities {
 class Entity;
 }
+namespace world {
+class FeatureManager;
+}
 
 namespace actions {
 
@@ -18,7 +21,8 @@ class MoveAction {
 public:
   MoveAction(Entity &actor, core::Position target);
 
-  ActionResult execute(world::Map &map, entities::EntityManager &entities,
+  ActionResult execute(world::Map &map, world::FeatureManager &features,
+                       entities::EntityManager &entities,
                        entities::TurnManager &turnMgr);
 
 private:

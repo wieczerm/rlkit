@@ -1,5 +1,8 @@
 #include "OpenAction.hpp"
 #include "entities/Entity.hpp"
+#include "world/Feature.hpp"
+#include "world/FeatureManager.hpp"
+#include "world/FeatureProperties.hpp"
 #include "world/Tile.hpp"
 
 namespace actions {
@@ -7,25 +10,34 @@ namespace actions {
 OpenAction::OpenAction(Entity &actor, core::Position target)
     : actor_(actor), target_(target) {}
 
-ActionResult OpenAction::execute(world::Map &map) {
+ActionResult OpenAction::execute(world::Map &map,
+                                 world::FeatureManager &features) {
   // Check bounds
   if (!map.inBounds(target_)) {
     return ActionResult::invalid("Out of bounds");
   }
 
-  // Check if it's a closed door
-  auto tile = map.at(target_);
-
-  if (tile == world::Tile::DoorClosed) {
-    map.set(target_, world::Tile::DoorOpen);
-    return ActionResult::success("Door opened", 100);
+  // Check if there's a door feature at target
+  world::Feature *feature = features.getFeature(target_);
+  
+  if (!feature) {
+    return ActionResult::failure("Nothing to open here");
   }
 
-  if (tile == world::Tile::DoorOpen) {
+  // Check if it's a door
+  if (!world::isDoor(*feature)) {
+    return ActionResult::failure("Nothing to open here");
+  }
+
+  world::Door *door = world::getDoor(*feature);
+  
+  if (door->state == world::Door::State::Open) {
     return ActionResult::failure("Door already open");
   }
 
-  return ActionResult::failure("Nothing to open here");
+  // Open the door
+  door->state = world::Door::State::Open;
+  return ActionResult::success("Door opened", 100);
 }
 
 } // namespace actions

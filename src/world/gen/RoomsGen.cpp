@@ -13,10 +13,11 @@ struct Rect {
   core::Position center() const { return {x + w / 2, y + h / 2}; }
 };
 
-void placeStairsInRoom(world::Map &map, const Rect &room) {
-  core::Position center = room.center();
-  map.set(center, world::Tile::StairsDown);
-}
+// REMOVED: Stairs are now placed by FeaturePlacer via Feature system
+// void placeStairsInRoom(world::Map &map, const Rect &room) {
+//   core::Position center = room.center();
+//   map.set(center, world::Tile::StairsDown);
+// }
 
 inline int sgn(int v) { return (v > 0) - (v < 0); }
 
@@ -29,7 +30,7 @@ bool areaIsAllWalls(const world::Map &m, const Rect &r, int pad) {
   const int y1 = std::min(m.height(), r.y + r.h + pad);
   for (int y = y0; y < y1; ++y)
     for (int x = x0; x < x1; ++x)
-      if (!world::isWall(m.at({x, y})))
+      if (m.at({x, y}) != world::Tile::SolidRock)
         return false;
   return true;
 }
@@ -37,30 +38,30 @@ bool areaIsAllWalls(const world::Map &m, const Rect &r, int pad) {
 void carveRect(world::Map &m, const Rect &r) {
   for (int y = r.y; y < r.y + r.h; ++y)
     for (int x = r.x; x < r.x + r.w; ++x)
-      m.set({x, y}, world::Tile::Floor);
+      m.set({x, y}, world::Tile::OpenGround);
 }
 
 // Stop before entering a room interior so doors can be auto-placed later.
 void digToEdgeH(world::Map &m, int x0, int x1, int y) {
   int dx = sgn(x1 - x0);
   for (int x = x0; x != x1 + dx; x += dx) {
-    if (world::isFloor(m.at({x, y})))
+    if (m.at({x, y}) == world::Tile::OpenGround)
       continue;
     int nx = x + dx;
-    if (m.inBounds(nx, y) && world::isFloor(m.at({nx, y})))
+    if (m.inBounds(nx, y) && (m.at({nx, y}) == world::Tile::OpenGround))
       break;
-    m.set({x, y}, world::Tile::Floor);
+    m.set({x, y}, world::Tile::OpenGround);
   }
 }
 void digToEdgeV(world::Map &m, int y0, int y1, int x) {
   int dy = sgn(y1 - y0);
   for (int y = y0; y != y1 + dy; y += dy) {
-    if (world::isFloor(m.at({x, y})))
+    if (m.at({x, y}) == world::Tile::OpenGround)
       continue;
     int ny = y + dy;
-    if (m.inBounds(x, ny) && world::isFloor(m.at({x, ny})))
+    if (m.inBounds(x, ny) && m.at({x, ny}) == world::Tile::OpenGround)
       break;
-    m.set({x, y}, world::Tile::Floor);
+    m.set({x, y}, world::Tile::OpenGround);
   }
 }
 
@@ -100,52 +101,11 @@ void normalize_rooms_options(world::RoomsOptions &opt,
   opt.max_rooms = std::min(opt.max_rooms, softCap);
 }
 
-// Try to place stairs using probability-based selection
-bool tryPlaceStairsWithProbability(world::Map &map,
-                                   std::vector<Rect> &availableRooms,
-                                   std::mt19937 &rng) {
-  if (availableRooms.empty())
-    return false;
+// REMOVED: Stairs placement moved to FeaturePlacer
+// bool tryPlaceStairsWithProbability(...) { ... }
 
-  std::uniform_real_distribution<double> dis(0.0, 1.0);
-
-  for (size_t i = 0; i < availableRooms.size(); ++i) {
-    double probability =
-        static_cast<double>(i + 1) / static_cast<double>(availableRooms.size());
-
-    if (dis(rng) < probability) {
-      placeStairsInRoom(map, availableRooms[i]);
-      availableRooms.erase(availableRooms.begin() +
-                           static_cast<std::vector<Rect>::difference_type>(i));
-      return true;
-    }
-  }
-
-  return false;
-}
-
-// Place stairs with configurable probabilities
-void placeStairsInRooms(world::Map &m, const std::vector<Rect> &rooms,
-                        std::mt19937 &rng) {
-  if (rooms.empty())
-    return;
-
-  std::vector<Rect> availableRooms = rooms; // Copy for mutation
-  std::uniform_real_distribution<double> dis(0.0, 1.0);
-
-  // First stairs - guaranteed (probability-based selection)
-  tryPlaceStairsWithProbability(m, availableRooms, rng);
-
-  // Second stairs - 15% chance
-  if (dis(rng) < 0.15) {
-    tryPlaceStairsWithProbability(m, availableRooms, rng);
-  }
-
-  // Third stairs - 5% chance
-  if (dis(rng) < 0.05) {
-    tryPlaceStairsWithProbability(m, availableRooms, rng);
-  }
-}
+// REMOVED: Stairs placement moved to FeaturePlacer
+// void placeStairsInRooms(...) { ... }
 
 } // namespace
 
@@ -155,7 +115,7 @@ void generateRoomsModuleImpl(Map &m, const RoomsOptions &optIn,
                              const ::config::RoomPlacementConfig &placement,
                              std::mt19937 &G) {
 
-  m.fill(Tile::Wall);
+  m.fill(Tile::SolidRock);
 
   RoomsOptions opt = optIn;
   normalize_rooms_options(opt, placement, m);
@@ -201,9 +161,7 @@ void generateRoomsModuleImpl(Map &m, const RoomsOptions &optIn,
   for (size_t i = 1; i < rooms.size(); ++i)
     carveLCorridorStop(m, rooms[i - 1].center(), rooms[i].center(), G);
 
-  if (!rooms.empty()) {
-    placeStairsInRooms(m, rooms, G);
-  }
+  // Stairs are now placed by FeaturePlacer, not here
 }
 // New overload: accepts LevelConfig
 void generateRoomsModule(Map &m, const config::LevelConfig &levelCfg,

@@ -1,6 +1,6 @@
-#include "systems/CombatSystem.hpp"
-
 #include "MoveAction.hpp"
+#include "systems/CombatSystem.hpp"
+#include "world/FeatureManager.hpp"
 
 namespace actions {
 
@@ -8,6 +8,7 @@ MoveAction::MoveAction(Entity &actor, core::Position target)
     : actor_(actor), target_(target) {}
 
 ActionResult MoveAction::execute(world::Map &map,
+                                 world::FeatureManager &features,
                                  entities::EntityManager &entities,
                                  entities::TurnManager &turnMgr) {
   // Check bounds
@@ -18,6 +19,11 @@ ActionResult MoveAction::execute(world::Map &map,
   // Check if blocked by terrain
   if (map.blocksMovement(target_)) {
     return ActionResult::failure("Blocked by wall");
+  }
+
+  // Check if blocked by features (closed doors)
+  if (features.blocksMovement(target_)) {
+    return ActionResult::failure("Door is closed");
   }
 
   // Check for entity at target

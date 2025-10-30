@@ -1,0 +1,100 @@
+# CMakeLists.txt Changes
+
+## Files to Add
+
+Add these lines to your CMakeLists.txt in the appropriate section where you list source files:
+
+```cmake
+# New Level Generation System files
+src/world/gen/LevelGenerator.cpp
+src/world/gen/FeaturePlacer.cpp
+```
+
+## Complete Example
+
+If your CMakeLists.txt has a section like this:
+
+```cmake
+set(SOURCES
+    src/main.cpp
+    src/Game.cpp
+    src/core/FOV.cpp
+    src/core/Pathfinding.cpp
+    # ... more files ...
+    src/world/gen/RoomsGen.cpp
+    src/world/gen/CavesGen.cpp
+    # ADD NEW FILES HERE:
+    src/world/gen/LevelGenerator.cpp
+    src/world/gen/FeaturePlacer.cpp
+)
+```
+
+## Alternative: Automatic Inclusion
+
+If you use GLOB:
+
+```cmake
+file(GLOB_RECURSE SOURCES "src/*.cpp")
+```
+
+Then the new files will be included automatically (no changes needed).
+
+## Build Commands
+
+After updating CMakeLists.txt:
+
+```bash
+cd build
+cmake ..
+make
+```
+
+Or clean build:
+
+```bash
+rm -rf build/*
+cd build
+cmake ..
+make
+```
+
+## Expected Output
+
+You should see during compilation:
+
+```
+[ XX%] Building CXX object CMakeFiles/rogueline.dir/src/world/gen/LevelGenerator.cpp.o
+[ XX%] Building CXX object CMakeFiles/rogueline.dir/src/world/gen/FeaturePlacer.cpp.o
+```
+
+## Verification
+
+After successful compilation:
+
+```bash
+ls -lh build/rogueline  # or your executable name
+./build/rogueline       # run the game
+```
+
+Game should launch without errors.
+
+## No Other CMake Changes Needed
+
+- No new libraries required
+- No new include directories
+- No new compiler flags
+- Just add the two new source files
+
+## If Compilation Fails
+
+Check:
+1. File paths are correct (src/world/gen/...)
+2. No typos in filenames
+3. All files have Unix line endings (LF not CRLF)
+4. Headers are in correct locations
+5. #include paths match actual file locations
+
+Common errors:
+- "No such file or directory": Check file path in CMakeLists.txt
+- "undefined reference": Missing source file in CMakeLists.txt
+- "cannot open source file": Check #include paths in source files
