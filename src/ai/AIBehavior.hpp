@@ -1,6 +1,6 @@
 #pragma once
-#include "../actions/ActionResult.hpp"
-#include "../entities/TurnManager.hpp"
+#include "actions/ActionResult.hpp"
+#include "entities/TurnManager.hpp"
 
 // Forward declarations
 namespace entities {

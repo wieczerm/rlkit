@@ -1,4 +1,5 @@
-#include "src/core/InputHandler.hpp"
+#include "InputHandler.hpp"
+#include "Position.hpp"
 #include <iostream>
 
 #ifdef _WIN32
@@ -28,54 +29,6 @@ char InputHandler::readChar() {
   tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
   return ch;
 #endif
-}
-
-InputAction InputHandler::getAction() {
-  char ch = readChar();
-
-  switch (ch) {
-  // Vi keys
-  case 'k':
-    return InputAction::MoveNorth;
-  case 'j':
-    return InputAction::MoveSouth;
-  case 'h':
-    return InputAction::MoveWest;
-  case 'l':
-    return InputAction::MoveEast;
-  case 'y':
-    return InputAction::MoveNorthWest;
-  case 'u':
-    return InputAction::MoveNorthEast;
-  case 'b':
-    return InputAction::MoveSouthWest;
-  case 'n':
-    return InputAction::MoveSouthEast;
-
-  // Arrow keys (WASD)
-  case 'w':
-    return InputAction::MoveNorth;
-  case 's':
-    return InputAction::MoveSouth;
-  case 'a':
-    return InputAction::MoveWest;
-  case 'd':
-    return InputAction::MoveEast;
-
-  // Wait
-  case '.':
-  case ' ':
-    return InputAction::Wait;
-  case 'o':
-    return InputAction::Open;
-  // Quit
-  case 'q':
-  case 'Q':
-    return InputAction::Quit;
-
-  default:
-    return InputAction::None;
-  }
 }
 
 Position InputHandler::actionToDirection(InputAction action) {

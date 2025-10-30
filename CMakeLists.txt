@@ -25,15 +25,19 @@ set(CORE_SOURCES
   src/core/FOV.cpp
   src/core/Pathfinding.cpp
   src/core/InputHandler.cpp
+  src/core/InputMapper.cpp
+  src/core/InputScheme.cpp
 )
 set(CORE_HEADERS
   src/core/Position.hpp
   src/core/FOV.hpp
   src/core/Pathfinding.hpp
   src/core/InputHandler.hpp
+  src/core/InputMapper.hpp
+  src/core/InputScheme.hpp
 )
 add_library(core STATIC ${CORE_SOURCES} ${CORE_HEADERS})
-target_include_directories(core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 # In systems section (new)
 set(SYSTEMS_SOURCES
@@ -43,7 +47,7 @@ set(SYSTEMS_HEADERS
   src/systems/CombatSystem.hpp
 )
 add_library(systems STATIC ${SYSTEMS_SOURCES} ${SYSTEMS_HEADERS})
-target_include_directories(systems PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(systems PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_link_libraries(systems PUBLIC entities)
 
 # In actions section (new)
@@ -57,7 +61,7 @@ set(ACTIONS_HEADERS
   src/actions/OpenAction.hpp
 )
 add_library(actions STATIC ${ACTIONS_SOURCES} ${ACTIONS_HEADERS})
-target_include_directories(actions PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(actions PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_link_libraries(actions PUBLIC core world entities systems)
 
 
@@ -73,7 +77,7 @@ set(ENTITIES_HEADERS
   src/entities/TurnManager.hpp
 )
 add_library(entities STATIC ${ENTITIES_SOURCES} ${ENTITIES_HEADERS})
-target_include_directories(entities PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(entities PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_link_libraries(entities PUBLIC core)
 
 # --- ai ---
@@ -85,7 +89,7 @@ set(AI_HEADERS
   src/ai/SimpleAI.hpp
 )
 add_library(ai STATIC ${AI_SOURCES} ${AI_HEADERS})
-target_include_directories(ai PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(ai PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_link_libraries(ai PUBLIC core world entities actions)
 
 
@@ -105,7 +109,7 @@ set(WORLD_HEADERS
   src/world/gen/CavesGen.hpp
 )
 add_library(world STATIC ${WORLD_SOURCES} ${WORLD_HEADERS})
-target_include_directories(world PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(world PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/scr)
 target_link_libraries(world PUBLIC core)
 
 find_package(ftxui REQUIRED)
@@ -119,7 +123,7 @@ set(FTXUIRenderer_HEADERS
 )
 
 add_library(ftxui_renderer STATIC ${FTXUIRenderer_SOURCES} ${FTXUIRenderer_HEADERS})
-target_include_directories(ftxui_renderer PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(ftxui_renderer PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_link_libraries(ftxui_renderer PUBLIC 
   core 
   world 
@@ -129,9 +133,36 @@ target_link_libraries(ftxui_renderer PUBLIC
   ftxui::component
 )
 
+# --- ui ---
+set(UI_SOURCES
+  src/ui/UIManager.cpp
+  src/ui/GameViewPanel.cpp
+  src/ui/MessageLogPanel.cpp
+  src/ui/LookInfoPanel.cpp
+  src/ui/MinimapPanel.cpp
+  src/ui/StatusBarPanel.cpp
+  src/ui/StatsBarPanel.cpp
+)
+set(UI_HEADERS
+  src/ui/Panel.hpp
+  src/ui/UIManager.hpp
+  src/ui/GameViewPanel.hpp
+  src/ui/MessageLogPanel.hpp
+  src/ui/LookInfoPanel.hpp
+  src/ui/MinimapPanel.hpp
+  src/ui/StatusBarPanel.hpp
+  src/ui/StatsBarPanel.hpp
+)
+add_library(ui STATIC ${UI_SOURCES} ${UI_HEADERS})
+target_include_directories(ui PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(ui PUBLIC core world entities)
+
+
 # --- demo ---
-add_executable(rl_demo src/main.cpp)
-target_link_libraries(rl_demo PRIVATE core world entities ftxui_renderer systems actions ai)
+add_executable(rl_demo
+  src/main.cpp
+  src/Game.cpp)
+target_link_libraries(rl_demo PRIVATE core world entities ftxui_renderer systems actions ai ui)
 
 # --- tests ---
 include(CTest)

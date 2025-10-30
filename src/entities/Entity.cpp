@@ -1,10 +1,13 @@
 #include "Entity.hpp"
-#include "../ai/AIBehavior.hpp"
+#include "ai/AIBehavior.hpp"
 
 namespace entities {
 
-Entity::Entity(const std::string &name, const Position &pos)
-    : name_(name), position_(pos) {}
+Entity::Entity(const std::string &name, const core::Position &pos)
+    : name_(name), position_(pos), glyph_('@') {
+  properties_["hp"] = 0;
+  properties_["max_hp"] = 0;
+}
 
 Entity::~Entity() = default;
 

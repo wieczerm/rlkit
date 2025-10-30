@@ -1,5 +1,5 @@
 #pragma once
-#include "../entities/Entity.hpp"
+#include "entities/Entity.hpp"
 #include <string>
 
 namespace entities {

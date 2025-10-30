@@ -1,8 +1,8 @@
 #pragma once
-#include "../core/Position.hpp"
-#include "../entities/Entity.hpp"
-#include "../world/Map.hpp"
 #include "ActionResult.hpp"
+#include "core/Position.hpp"
+#include "entities/Entity.hpp"
+#include "world/Map.hpp"
 
 namespace entities {
 class Entity;
@@ -14,13 +14,13 @@ using entities::Entity;
 
 class OpenAction {
 public:
-  OpenAction(Entity &actor, Position target);
+  OpenAction(Entity &actor, core::Position target);
 
   ActionResult execute(world::Map &map);
 
 private:
   Entity &actor_;
-  Position target_;
+  core::Position target_;
 };
 
 } // namespace actions

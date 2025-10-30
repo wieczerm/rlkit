@@ -1,5 +1,5 @@
 #include "CavesGen.hpp"
-#include "../../config/DungeonConfig.hpp"
+#include "config/DungeonConfig.hpp"
 #include <algorithm>
 #include <climits>
 #include <queue>
@@ -54,7 +54,7 @@ size_t labelComponents(const world::Map &m, std::vector<CompId> &lbl) {
   };
 
   size_t comps = 0;
-  std::queue<Position> q;
+  std::queue<core::Position> q;
   for (int y = 0; y < H; ++y)
     for (int x = 0; x < W; ++x) {
       const auto k = id(x, y);
@@ -84,7 +84,8 @@ size_t labelComponents(const world::Map &m, std::vector<CompId> &lbl) {
 }
 
 // Simple L corridor through walls between two points.
-void carveLCorridorThroughWalls(world::Map &m, Position a, Position b) {
+void carveLCorridorThroughWalls(world::Map &m, core::Position a,
+                                core::Position b) {
   if (a.x == b.x && a.y == b.y)
     return;
   if (a.x <= b.x) {
@@ -124,7 +125,7 @@ void connectComponentsToMain(world::Map &m) {
       main_id = i;
 
   // Collect cells of each component.
-  std::vector<std::vector<Position>> cells(comps);
+  std::vector<std::vector<core::Position>> cells(comps);
   for (int y = 0; y < H; ++y)
     for (int x = 0; x < W; ++x) {
       const CompId c = lbl[id(x, y)];
@@ -138,7 +139,7 @@ void connectComponentsToMain(world::Map &m) {
       continue;
 
     int bestD = INT_MAX;
-    Position A{}, B{};
+    core::Position A{}, B{};
     for (const auto &p : cells[c])
       for (const auto &q : cells[main_id]) {
         int d = std::abs(p.x - q.x) + std::abs(p.y - q.y);
@@ -175,12 +176,15 @@ void connectComponentsToMain(world::Map &m) {
 
 namespace world {
 
-void generateCavesModuleImpl(Map &m, const CavesOptions &opt, const ::config::CaveGenerationConfig &caveGen, std::mt19937 &G) {
+void generateCavesModuleImpl(Map &m, const CavesOptions &opt,
+                             const ::config::CaveGenerationConfig &caveGen,
+                             std::mt19937 &G) {
 
   m.fill(Tile::Wall);
 
   // Seed phase (random interior, solid border).
-  std::uniform_int_distribution<int> pct(caveGen.random_percent_min, caveGen.random_percent_max);
+  std::uniform_int_distribution<int> pct(caveGen.random_percent_min,
+                                         caveGen.random_percent_max);
   for (int y = 0; y < m.height(); ++y)
     for (int x = 0; x < m.width(); ++x) {
       const bool edge =
@@ -199,9 +203,9 @@ void generateCavesModuleImpl(Map &m, const CavesOptions &opt, const ::config::Ca
   connectComponentsToMain(m);
 }
 
-
 // New overload: accepts LevelConfig
-void generateCavesModule(Map &m, const config::LevelConfig &levelCfg, std::mt19937 &G) {
+void generateCavesModule(Map &m, const config::LevelConfig &levelCfg,
+                         std::mt19937 &G) {
   generateCavesModuleImpl(m, levelCfg.caves, levelCfg.cave_generation, G);
 }
 

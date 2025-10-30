@@ -1,33 +1,15 @@
 #pragma once
+#include "InputAction.hpp"
 #include "Position.hpp"
 
 namespace core {
-
-enum class InputAction {
-  None,
-  MoveNorth,
-  MoveSouth,
-  MoveEast,
-  MoveWest,
-  MoveNorthEast,
-  MoveNorthWest,
-  MoveSouthEast,
-  MoveSouthWest,
-  Wait,
-  Open,
-  Quit
-};
-
 class InputHandler {
 public:
+  // Just reads raw char - no mapping
   static char readChar();
-  InputHandler() = default;
 
-  // Get input action (blocking)
-  InputAction getAction();
-
-  // Convert action to direction delta
-  static Position actionToDirection(InputAction action);
+  // Keep helper for direction conversion
+  static core::Position actionToDirection(InputAction action);
 };
 
 } // namespace core

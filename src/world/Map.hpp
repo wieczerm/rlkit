@@ -1,6 +1,6 @@
 #pragma once
-#include "../core/Position.hpp"
 #include "Tile.hpp"
+#include "core/Position.hpp"
 #include <cassert>
 #include <cstddef>
 #include <vector>
@@ -18,7 +18,7 @@ public:
   int width() const noexcept { return w_; }
   int height() const noexcept { return h_; }
 
-  [[nodiscard]] inline bool inBounds(Position p) const noexcept {
+  [[nodiscard]] inline bool inBounds(core::Position p) const noexcept {
     return p.x >= 0 && p.y >= 0 && p.x < w_ && p.y < h_;
   }
 
@@ -26,12 +26,12 @@ public:
     return x >= 0 && y >= 0 && x < w_ && y < h_;
   }
 
-  Tile at(Position p) const noexcept {
+  Tile at(core::Position p) const noexcept {
     assert(inBounds(p));
     return data_[idx(p)];
   }
 
-  void set(Position p, Tile t) noexcept {
+  void set(core::Position p, Tile t) noexcept {
     assert(inBounds(p));
     data_[idx(p)] = t;
   }
@@ -49,18 +49,18 @@ public:
     return ::world::blocksLineOfSight(data_[idx({x, y})]);
   }
 
-  bool blocksMovement(Position p) const noexcept {
+  bool blocksMovement(core::Position p) const noexcept {
     if (!inBounds(p))
       return true;
     return ::world::blocksMovement(at(p));
   }
 
-  inline bool blocksLineOfSight(Position p) const noexcept {
+  inline bool blocksLineOfSight(core::Position p) const noexcept {
     return ::world::blocksLineOfSight(at(p));
   }
 
 private:
-  std::size_t idx(Position p) const noexcept {
+  std::size_t idx(core::Position p) const noexcept {
     // bezpieczne po in_bounds()
     return static_cast<std::size_t>(p.y) * static_cast<std::size_t>(w_) +
            static_cast<std::size_t>(p.x);

@@ -1,4 +1,4 @@
-#include "src/entities/TurnManager.hpp"
+#include "TurnManager.hpp"
 #include <algorithm>
 #include <fstream>
 

@@ -1,13 +1,13 @@
-#include "../src/entities/EntityManager.hpp"
-#include "../src/entities/Entity.hpp"
 #include "../src/core/Position.hpp"
+#include "../src/entities/Entity.hpp"
+#include "../src/entities/EntityManager.hpp"
 #include "include/assertions.hpp"
 #include <iostream>
 #include <memory>
 
 int main() {
-  using entities::EntityManager;
   using entities::Entity;
+  using entities::EntityManager;
 
   EntityManager manager;
 
@@ -16,12 +16,12 @@ int main() {
   EXPECT_TRUE(manager.getEntityAt({5, 5}) == nullptr);
 
   // Test 2: Add entities
-  auto player = std::make_unique<Entity>("Player", Position{5, 5});
+  auto player = std::make_unique<Entity>("Player", core::Position{5, 5});
   Entity *playerPtr = player.get();
   manager.addEntity(std::move(player));
   EXPECT_EQ(manager.count(), 1);
 
-  auto goblin = std::make_unique<Entity>("Goblin", Position{10, 10});
+  auto goblin = std::make_unique<Entity>("Goblin", core::Position{10, 10});
   Entity *goblinPtr = goblin.get();
   manager.addEntity(std::move(goblin));
   EXPECT_EQ(manager.count(), 2);
@@ -36,7 +36,7 @@ int main() {
   EXPECT_TRUE(manager.getEntityAt({0, 0}) == nullptr);
 
   // Test 5: Multiple entities at same position
-  auto orc = std::make_unique<Entity>("Orc", Position{5, 5});
+  auto orc = std::make_unique<Entity>("Orc", core::Position{5, 5});
   manager.addEntity(std::move(orc));
   auto entities = manager.getEntitiesAt({5, 5});
   EXPECT_EQ(entities.size(), 2);

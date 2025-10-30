@@ -3,6 +3,8 @@
 #include "Position.hpp"
 #include <vector>
 
+namespace core {
+
 class FOV {
 public:
   explicit FOV(const core::IMapView &map);
@@ -18,4 +20,6 @@ private:
 
   // Simple Bresenham line-of-sight check
   bool hasLineOfSight(int x0, int y0, int x1, int y1) const;
+  void markRayUntilBlocked(int x0, int y0, int x1, int y1);
 };
+} // namespace core

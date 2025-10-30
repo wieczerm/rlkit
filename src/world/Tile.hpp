@@ -8,6 +8,8 @@ enum class Tile : std::uint8_t {
   Wall,
   DoorClosed,
   DoorOpen,
+  StairsDown,
+  StairsUp
 };
 
 inline constexpr bool blocksMovement(Tile t) noexcept {
@@ -19,6 +21,10 @@ inline constexpr bool blocksMovement(Tile t) noexcept {
   case Tile::Floor:
     return false;
   case Tile::DoorOpen:
+    return false;
+  case Tile::StairsDown: // ADD
+    return false;
+  case Tile::StairsUp: // ADD
     return false;
   }
   return true;
@@ -33,6 +39,10 @@ inline constexpr bool blocksLineOfSight(Tile t) noexcept {
   case Tile::Floor:
     return false;
   case Tile::DoorOpen:
+    return false;
+  case Tile::StairsDown: // ADD
+    return false;
+  case Tile::StairsUp: // ADD
     return false;
   }
   return true;

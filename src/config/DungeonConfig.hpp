@@ -1,6 +1,6 @@
 #pragma once
-#include "../world/gen/RoomsGen.hpp"
-#include "../world/gen/CavesGen.hpp"
+#include "world/gen/CavesGen.hpp"
+#include "world/gen/RoomsGen.hpp"
 
 namespace config {
 
@@ -10,17 +10,17 @@ namespace config {
 
 // Configuration for room placement algorithm
 struct RoomPlacementConfig {
-  int attempts_multiplier = 100;  // Base attempts for room placement
-  int attempts_per_room = 8;      // Additional attempts per max_rooms
-  int room_padding = 1;           // Minimum gap between rooms (in tiles)
-  int edge_margin = 2;            // Margin from map edges
-  int min_room_dimension = 2;     // Absolute minimum room size
+  int attempts_multiplier = 100; // Base attempts for room placement
+  int attempts_per_room = 8;     // Additional attempts per max_rooms
+  int room_padding = 1;          // Minimum gap between rooms (in tiles)
+  int edge_margin = 2;           // Margin from map edges
+  int min_room_dimension = 2;    // Absolute minimum room size
 };
 
 // Configuration for cellular automata cave generation
 struct CaveGenerationConfig {
-  int random_percent_min = 0;     // Minimum for random percentage (0-100)
-  int random_percent_max = 99;    // Maximum for random percentage (0-100)
+  int random_percent_min = 0;  // Minimum for random percentage (0-100)
+  int random_percent_max = 99; // Maximum for random percentage (0-100)
 };
 
 // ============================================================================
@@ -33,7 +33,7 @@ struct LevelConfig {
   world::CavesOptions caves;
   RoomPlacementConfig room_placement;
   CaveGenerationConfig cave_generation;
-  
+
   // Constructor with sensible defaults
   LevelConfig() {
     // RoomsOptions defaults (already defined in RoomsGen.hpp)
@@ -41,7 +41,7 @@ struct LevelConfig {
     rooms.room_min = 5;
     rooms.room_max = 10;
     rooms.add_doors = true;
-    
+
     // CavesOptions defaults (already defined in CavesGen.hpp)
     caves.fill_percent = 52;
     caves.steps = 5;
@@ -82,7 +82,7 @@ inline LevelConfig largeDungeon() {
 // Dense cave system with lots of open space
 inline LevelConfig denseCaves() {
   LevelConfig cfg;
-  cfg.caves.fill_percent = 45;  // Less initial walls = more open
+  cfg.caves.fill_percent = 45; // Less initial walls = more open
   cfg.caves.steps = 6;
   cfg.caves.birth = 5;
   cfg.caves.survive = 3;
@@ -92,7 +92,7 @@ inline LevelConfig denseCaves() {
 // Tight, maze-like caves
 inline LevelConfig tightCaves() {
   LevelConfig cfg;
-  cfg.caves.fill_percent = 58;  // More initial walls = tighter
+  cfg.caves.fill_percent = 58; // More initial walls = tighter
   cfg.caves.steps = 4;
   cfg.caves.birth = 6;
   cfg.caves.survive = 5;

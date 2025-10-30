@@ -1,14 +1,22 @@
-#include "../../config/DungeonConfig.hpp"
 #include "RoomsGen.hpp"
+#include "config/DungeonConfig.hpp"
+#include "world/Map.hpp"
+#include "world/Tile.hpp"
 #include <algorithm>
+#include <iostream>
 #include <vector>
 
 namespace { // ---------- file-scope helpers (rooms) ----------
 
 struct Rect {
   int x, y, w, h;
-  Position center() const { return {x + w / 2, y + h / 2}; }
+  core::Position center() const { return {x + w / 2, y + h / 2}; }
 };
+
+void placeStairsInRoom(world::Map &map, const Rect &room) {
+  core::Position center = room.center();
+  map.set(center, world::Tile::StairsDown);
+}
 
 inline int sgn(int v) { return (v > 0) - (v < 0); }
 
@@ -56,7 +64,7 @@ void digToEdgeV(world::Map &m, int y0, int y1, int x) {
   }
 }
 
-void carveLCorridorStop(world::Map &m, Position a, Position b,
+void carveLCorridorStop(world::Map &m, core::Position a, core::Position b,
                         std::mt19937 &G) {
   if (a.x == b.x && a.y == b.y)
     return;
@@ -90,6 +98,53 @@ void normalize_rooms_options(world::RoomsOptions &opt,
   if (opt.max_rooms <= 0)
     opt.max_rooms = 1;
   opt.max_rooms = std::min(opt.max_rooms, softCap);
+}
+
+// Try to place stairs using probability-based selection
+bool tryPlaceStairsWithProbability(world::Map &map,
+                                   std::vector<Rect> &availableRooms,
+                                   std::mt19937 &rng) {
+  if (availableRooms.empty())
+    return false;
+
+  std::uniform_real_distribution<double> dis(0.0, 1.0);
+
+  for (size_t i = 0; i < availableRooms.size(); ++i) {
+    double probability =
+        static_cast<double>(i + 1) / static_cast<double>(availableRooms.size());
+
+    if (dis(rng) < probability) {
+      placeStairsInRoom(map, availableRooms[i]);
+      availableRooms.erase(availableRooms.begin() +
+                           static_cast<std::vector<Rect>::difference_type>(i));
+      return true;
+    }
+  }
+
+  return false;
+}
+
+// Place stairs with configurable probabilities
+void placeStairsInRooms(world::Map &m, const std::vector<Rect> &rooms,
+                        std::mt19937 &rng) {
+  if (rooms.empty())
+    return;
+
+  std::vector<Rect> availableRooms = rooms; // Copy for mutation
+  std::uniform_real_distribution<double> dis(0.0, 1.0);
+
+  // First stairs - guaranteed (probability-based selection)
+  tryPlaceStairsWithProbability(m, availableRooms, rng);
+
+  // Second stairs - 15% chance
+  if (dis(rng) < 0.15) {
+    tryPlaceStairsWithProbability(m, availableRooms, rng);
+  }
+
+  // Third stairs - 5% chance
+  if (dis(rng) < 0.05) {
+    tryPlaceStairsWithProbability(m, availableRooms, rng);
+  }
 }
 
 } // namespace
@@ -145,8 +200,11 @@ void generateRoomsModuleImpl(Map &m, const RoomsOptions &optIn,
             [](const Rect &a, const Rect &b) { return a.x < b.x; });
   for (size_t i = 1; i < rooms.size(); ++i)
     carveLCorridorStop(m, rooms[i - 1].center(), rooms[i].center(), G);
-}
 
+  if (!rooms.empty()) {
+    placeStairsInRooms(m, rooms, G);
+  }
+}
 // New overload: accepts LevelConfig
 void generateRoomsModule(Map &m, const config::LevelConfig &levelCfg,
                          std::mt19937 &G) {

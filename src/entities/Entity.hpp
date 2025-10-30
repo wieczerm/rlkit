@@ -1,5 +1,5 @@
 #pragma once
-#include "../core/Position.hpp"
+#include "core/Position.hpp"
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -12,14 +12,17 @@ namespace entities {
 
 class Entity {
 public:
-  Entity(const std::string &name, const Position &pos);
+  Entity(const std::string &name, const core::Position &pos);
   ~Entity();
   // Position management
-  const Position &getPosition() const noexcept { return position_; }
-  void setPosition(const Position &pos) noexcept { position_ = pos; }
+  const core::Position &getPosition() const noexcept { return position_; }
+  void setPosition(const core::Position &pos) noexcept { position_ = pos; }
 
   // Name
   const std::string &getName() const noexcept { return name_; }
+
+  char getGlyph() const { return glyph_; }
+  void setGlyph(char g) { glyph_ = g; }
 
   // Generic property system
   void setProperty(const std::string &key, int value);
@@ -41,9 +44,10 @@ public:
 
 private:
   std::string name_;
-  Position position_;
+  core::Position position_;
   std::unordered_map<std::string, int> properties_;
   std::unique_ptr<ai::AIBehavior> ai_;
+  char glyph_;
 };
 
 } // namespace entities

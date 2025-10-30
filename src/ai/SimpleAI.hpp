@@ -1,7 +1,7 @@
 #pragma once
-#include "../core/FOV.hpp"
-#include "../core/Pathfinding.hpp"
 #include "AIBehavior.hpp"
+#include "core/FOV.hpp"
+#include "core/Pathfinding.hpp"
 #include <memory>
 
 namespace ai {

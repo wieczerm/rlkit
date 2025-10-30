@@ -24,8 +24,8 @@ int main() {
   }
 
   world::MapViewAdapter view(m);
-  FOV fov(view);
-  Position origin{7, 5};
+  core::FOV fov(view);
+  core::Position origin{7, 5};
   int radius = 4;
   fov.compute(origin, radius);
 

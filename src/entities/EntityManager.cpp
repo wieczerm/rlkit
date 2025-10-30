@@ -16,7 +16,7 @@ void EntityManager::removeEntity(Entity *entity) {
                   entities_.end());
 }
 
-Entity *EntityManager::getEntityAt(const Position &pos) const {
+Entity *EntityManager::getEntityAt(const core::Position &pos) const {
   for (const auto &entity : entities_) {
     if (entity->getPosition() == pos) {
       return entity.get();
@@ -25,7 +25,8 @@ Entity *EntityManager::getEntityAt(const Position &pos) const {
   return nullptr;
 }
 
-std::vector<Entity *> EntityManager::getEntitiesAt(const Position &pos) const {
+std::vector<Entity *>
+EntityManager::getEntitiesAt(const core::Position &pos) const {
   std::vector<Entity *> result;
   for (const auto &entity : entities_) {
     if (entity->getPosition() == pos) {

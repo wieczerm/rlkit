@@ -16,7 +16,7 @@
 int main() {
   using world::Map;
   using world::Tile;
-  Position p0{0, 0};
+  core::Position p0{0, 0};
 
   Map m(10, 8, Tile::Wall);
   EXPECT_EQ(m.width(), 10);

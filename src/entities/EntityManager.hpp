@@ -1,6 +1,6 @@
 #pragma once
 #include "Entity.hpp"
-#include "../core/Position.hpp"
+#include "core/Position.hpp"
 #include <memory>
 #include <vector>
 
@@ -17,10 +17,10 @@ public:
   void removeEntity(Entity *entity);
 
   // Get entity at position (returns first found, or nullptr)
-  Entity *getEntityAt(const Position &pos) const;
+  Entity *getEntityAt(const core::Position &pos) const;
 
   // Get all entities at position
-  std::vector<Entity *> getEntitiesAt(const Position &pos) const;
+  std::vector<Entity *> getEntitiesAt(const core::Position &pos) const;
 
   // Get all entities
   const std::vector<std::unique_ptr<Entity>> &getEntities() const noexcept {

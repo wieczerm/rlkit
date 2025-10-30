@@ -1,9 +1,10 @@
+#include "systems/CombatSystem.hpp"
+
 #include "MoveAction.hpp"
-#include "../systems/CombatSystem.hpp"
 
 namespace actions {
 
-MoveAction::MoveAction(Entity &actor, Position target)
+MoveAction::MoveAction(Entity &actor, core::Position target)
     : actor_(actor), target_(target) {}
 
 ActionResult MoveAction::execute(world::Map &map,
@@ -25,8 +26,7 @@ ActionResult MoveAction::execute(world::Map &map,
   if (target_entity) {
     // Bump attack!
     auto result = systems::CombatSystem::meleeAttack(actor_, *target_entity);
-
-    // Remove if killed
+    //  Remove if killed
     if (result.killed) {
       entities.removeEntity(target_entity);
       turnMgr.removeEntity(target_entity);

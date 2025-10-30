@@ -1,10 +1,10 @@
 #include "SimpleAI.hpp"
-#include "../actions/MoveAction.hpp"
-#include "../entities/Entity.hpp"
-#include "../entities/EntityManager.hpp"
-#include "../entities/TurnManager.hpp"
-#include "../world/Map.hpp"
-#include "../world/MapViewAdapter.hpp"
+#include "actions/MoveAction.hpp"
+#include "entities/Entity.hpp"
+#include "entities/EntityManager.hpp"
+#include "entities/TurnManager.hpp"
+#include "world/Map.hpp"
+#include "world/MapViewAdapter.hpp"
 
 namespace ai {
 
@@ -16,12 +16,12 @@ actions::ActionResult SimpleAI::act(entities::Entity &self,
                                     entities::EntityManager &entities,
                                     entities::TurnManager &turnMgr) {
 
-  Position selfPos = self.getPosition();
-  Position playerPos = player.getPosition();
+  core::Position selfPos = self.getPosition();
+  core::Position playerPos = player.getPosition();
 
   // Create fresh adapter and systems each time
   world::MapViewAdapter adapter(map);
-  FOV fov(adapter);
+  core::FOV fov(adapter);
   core::Pathfinding pathfinder(adapter);
 
   // Compute FOV from self position
@@ -40,7 +40,7 @@ actions::ActionResult SimpleAI::act(entities::Entity &self,
   }
 
   // Move to next position
-  Position nextPos = path[1];
+  core::Position nextPos = path[1];
   actions::MoveAction move(self, nextPos);
   // actions::MoveAction move(self, {5, 5});
   return move.execute(map, entities, turnMgr);

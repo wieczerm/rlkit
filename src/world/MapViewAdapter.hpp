@@ -1,6 +1,6 @@
 #pragma once
-#include "../core/IMapView.hpp"
 #include "Map.hpp"
+#include "core/IMapView.hpp"
 namespace world {
 class MapViewAdapter final : public core::IMapView {
   const Map &m_;

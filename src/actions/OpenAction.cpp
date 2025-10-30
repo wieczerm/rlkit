@@ -1,10 +1,10 @@
-#include "../entities/Entity.hpp"
-#include "../world/Tile.hpp"
 #include "OpenAction.hpp"
+#include "entities/Entity.hpp"
+#include "world/Tile.hpp"
 
 namespace actions {
 
-OpenAction::OpenAction(Entity &actor, Position target)
+OpenAction::OpenAction(Entity &actor, core::Position target)
     : actor_(actor), target_(target) {}
 
 ActionResult OpenAction::execute(world::Map &map) {

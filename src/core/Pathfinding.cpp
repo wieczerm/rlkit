@@ -1,4 +1,4 @@
-#include "src/core/Pathfinding.hpp"
+#include "Pathfinding.hpp"
 #include <algorithm>
 #include <cmath>
 #include <queue>
@@ -53,7 +53,7 @@ std::vector<Position> Pathfinding::getNeighbors(const Position &pos) const {
 }
 
 std::vector<Position> Pathfinding::findPath(const Position &start,
-                                             const Position &goal) {
+                                            const Position &goal) {
   if (start == goal)
     return {start};
 

@@ -1,5 +1,6 @@
 #pragma once
 
+namespace core {
 struct Position {
   int x;
   int y;
@@ -20,3 +21,4 @@ struct Position {
     return {x - other.x, y - other.y};
   }
 };
+} // namespace core
